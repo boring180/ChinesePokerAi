@@ -87,48 +87,115 @@ def seriesValidate(cards):
     
     length = len(cards)
     
-    if length == 1:
-        # 单牌
-        return True, series(seriesCards = cards, type = '单牌', value = cards[0])
+    match length:
+        case 1:
+            # 单牌
+            return True, series(seriesCards = cards, type = '单牌', value = values[0])
     
-    if length == 2:
-        # 对子 或 王炸
-        if values[0] == values[1]:
-            return True, series(seriesCards = cards, type = '对子', value = cards[0])
-        if values[0] == 13 and values[1] == 14:
-            return True, series(seriesCards = cards, type = '王炸')
-        return False, series(seriesCards = cards)
+        case 2:
+            # 对子 或 王炸
+            if values[0] == values[1]:
+                return True, series(seriesCards = cards, type = '对子', value = values[0])
+            if values[0] == 13 and values[1] == 14:
+                return True, series(seriesCards = cards, type = '王炸')
     
-    if length == 3:
-        # 三
-        if values[0] == values[1] and values[1] == values[2]:
-            return True, series(seriesCards = cards, type = '三带', value = cards[0])
-        return False, series(seriesCards = cards)
+        case 3:
+            # 三
+            if values[0] == values[1] and values[1] == values[2]:
+                return True, series(seriesCards = cards, type = '三带', value = values[0])
         
-    if length == 4:
-        # 三带一 或 炸弹
-        if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3]
-            or values[1] == values[2] and values[2] == values[3] and values[3] != values[0]
-            ):
-            return True, series(seriesCards = cards, type = '三带', value = cards[0], addOn1 = 1)
-        if values[0] == values[1] and values[1] == values[2] and values[2] == values[3]:
-            return True, series(seriesCards = cards, type = '炸弹', value = cards[0])
-        return False
+        case 4:
+            # 三带一 或 炸弹
+            if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3]
+                or values[1] == values[2] and values[2] == values[3] and values[3] != values[0]
+                ):
+                return True, series(seriesCards = cards, type = '三带', value = values[0], addOn1 = 1)
+            if values[0] == values[1] and values[1] == values[2] and values[2] == values[3]:
+                return True, series(seriesCards = cards, type = '炸弹', value = values[0])
     
-    if length == 5:
-        # 三带一对
-        if cards[0].value == cards[1].value & cards[1].value == cards[2].value & cards[3].value == cards[4].value:
-            return True
-        if cards[2].value == cards[3].value & cards[3].value == cards[4].value & cards[0].value == cards[1].value:
-            return True
-        # 顺子
+        case 5:
+            # 三带一对
+            if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3] and values[3] == values[4]
+                or values[2] == values[3] and values[3] == values[4] and values[4] != values[0] and values[0] == values[1]
+                ):
+                return True, series(seriesCards = cards, type = '三带', value = values[0], amount = length)
+            
+        case 6:
+            # 四带二
+            # 飞机不带
+            pass
+        
+        case 8:
+            # 四带两对
+            # 飞机带单牌
+            pass
+        
+        case 9:
+            # 三个翅膀的飞机
+            pass
+        
+        case 10:
+            # 飞机带两对
+            pass
+            
+        case 12:
+            # 三个翅膀的飞机带单牌
+            # 四个翅膀的飞机
+            pass
+            
+        case 15:
+            # 三个翅膀的飞机带对牌
+            # 五个翅膀的飞机
+            pass
+        
+        case 16:
+            # 四个翅膀的飞机带单牌
+            pass
+            
+        case 18:
+            # 六个翅膀的飞机
+            pass
+        
+        case 20:
+            # 四个翅膀的飞机带对牌
+            pass
+            
+        
+    
+    # 顺子，连对 不能以2结尾
+    if values[length-1] == 12:
+        return False, series(seriesCards = cards)
+    
+    # 顺子
+    if length > 4:
         straight = True
-        for i in range(4):
-            if cards[i].value != (cards[i+1].value - 1):
-                straight = False
-        if straight:
-            return True
-        return False
+    else:
+        straight = False
+        
+    for i in range(length):
+        if i > 0 and values[i] != values[i-1] + 1:
+            straight = False
+    if straight:
+            return True, series(seriesCards = cards, type = '顺子', value = values[length-1], amount = length)
+        
+    # 连对
+    if length > 5 and length % 2 == 0:
+        straightPairs = True
+    else:
+        straightPairs = False
+    for i in range(length):
+        if i  == 0:
+            continue
+        if i % 2 == 1 and values[i] != values[i - 1]:
+            straightPairs = False
+        if i % 2 == 0 and values[i] != values[i - 2] + 1:
+            straightPairs = False
+
+    if straightPairs:
+            return True, series(seriesCards = cards, type = '连对', value = values[length-1], amount = length)
+        
+    # 错误牌型
+    return False, series(seriesCards = cards)
     
 
 deck = [Card(suit, value) for suit in range(4) for value in range(13)]
@@ -138,7 +205,7 @@ deck.append(Card(4, 14))
 
 random.shuffle(deck)
 
-testSeries = [Card(0, 1), Card(1, 1), Card(2, 1), Card(3,0)]
+testSeries = [Card(0, 1), Card(1, 1), Card(2, 2), Card(1,2), Card(3,3), Card(0,3)]
 
 success, testSeriesValidation = seriesValidate(testSeries)
 
