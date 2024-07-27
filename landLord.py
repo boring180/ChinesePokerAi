@@ -1,5 +1,6 @@
 # Import
 import random
+import os
 
 # Constants
 suits = ['♠', '♥', '♣', '♦', '']
@@ -12,6 +13,7 @@ def validateDeal(cards)->bool:
 def validateLate(cardsEarly, cardsLate)->bool:
     pass
 
+# Ramdom seed
 
 # Class
 class Card:
@@ -22,44 +24,54 @@ class Card:
         self.id = 4 * value + suit 
 
     def __str__(self):
-        return suits[self.suit] + values[self.value]    
+        return suits[self.suit] + values[self.value]
+    
+def readCardId(card):
+    return card.id  
     
 class player:
     def __init__(self, name, cards):
         self.name = name
         self.landLord =  False
+        cards.sort(key = readCardId)
         self.cards = cards
-        
 
     def __str__(self):
         landLordYesNo = "是" if(self.landLord) else "不是"
         return self.name + "， 有" + f"{len(self.cards)}" + "张手牌， " + landLordYesNo + "地主。"
         
-    def becomeLandLord(self):
+    def becomeLandLord(self,deckAppend):
         self.landLord = True
+        self.cards.extend(deckAppend)
+        self.cards.sort(key = readCardId)
+        
+    def isLandLord(self):
+        return self.landLord
+    
+    def gameStartMessage(self):
+        return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() 
+        
+    def isWin(self):
+        return len(self.cards) == 0
+    
+    def setMessage(self, respond):
+        self.message = respond
+        
+    def getMessage(self):
+        return self.message
+    
+    def getCardsString(self):
+        seriesString = ''
+        for  i in range(len(self.cards)):
+            seriesString += str(self.cards[i])
+        return seriesString
 
-    def playCard(self, early)-> bool:
-        while True:
-            print(self.name, "的手牌是", self.cards)
-            play = input('请出牌（不要请输入pass）：')
-            if play == 'pass':
-                return False
-            if len(early) == 0:
-                if validateDeal(play) == True:
-                    return True
-                else:
-                    continue
-            else:
-                if validateLate(early, play):
-                    return True
-                else:
-                    continue
                 
 seriesType = ['', '单牌', '对子', '三张', '顺子', '连对', '飞机', '四带', '炸弹', '王炸']
 
 class series:
     # constructor, create a serires object by the serires's type, value, amount of cards(连对，顺子), addons(三带，飞机，四带)
-    def __init__(self, seriesCards, type = '违规', value = 0, amount = 0, addOn1 = 0, addOn2 = 0):
+    def __init__(self, seriesCards = {}, type = '违规', value = 0, amount = 0, addOn1 = 0, addOn2 = 0):
         self.seriesCards = seriesCards
         self.type = type
         self.value = value
@@ -76,7 +88,6 @@ class series:
     def compare(self, lower):
         if lower.type == '违规' or self.type == '违规':
             return False
-        print("HW")
         if lower.type == '王炸':
             return True
         if self.type == '王炸':
@@ -96,11 +107,15 @@ def seriesValidate(cards):
     values.sort()
     
     # For debugging
-    print(values)
+    # print(values)
     
     length = len(cards)
     
     match length:
+        case 0:
+            # 空
+            return series(seriesCards = cards)
+        
         case 1:
             # 单牌
             return series(seriesCards = cards, type = '单牌', value = values[0])
@@ -122,7 +137,7 @@ def seriesValidate(cards):
             if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3]
                 or values[1] == values[2] and values[2] == values[3] and values[3] != values[0]
                 ):
-                return series(seriesCards = cards, type = '三带', value = values[0], addOn1 = 1)
+                return series(seriesCards = cards, type = '三带', value = values[1], addOn1 = 1)
             if values[0] == values[1] and values[1] == values[2] and values[2] == values[3]:
                 return series(seriesCards = cards, type = '炸弹', value = values[0])
     
@@ -131,7 +146,7 @@ def seriesValidate(cards):
             if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3] and values[3] == values[4]
                 or values[2] == values[3] and values[3] == values[4] and values[4] != values[0] and values[0] == values[1]
                 ):
-                return series(seriesCards = cards, type = '三带', value = values[0], amount = length)
+                return series(seriesCards = cards, type = '三带', value = values[2], amount = length)
             
         #case 6:
             # 四带二
@@ -172,7 +187,7 @@ def seriesValidate(cards):
         #case 20:
             # 四个翅膀的飞机带对牌
         #    pass
-    
+        
     # 顺子，连对 不能以2结尾
     if values[length-1] == 12:
         return series(seriesCards = cards)
@@ -216,9 +231,19 @@ deck.append(Card(4, 14))
 
 random.shuffle(deck)
 
-testSeries1 = series([Card(0, 1)])
-print(testSeries1)
-testSeries2 = series([Card(0, 2)])
-print(testSeries2)
+landLordNumber = random.randrange(3)
 
-print(testSeries1.compare(testSeries2))
+players = [player('玩家一', deck[0:17]), player('玩家二',deck[17:34]), player('玩家三', deck[34:51])]
+
+players[landLordNumber].becomeLandLord(deck[51:54])
+
+gameStartMessage = f"{players[0]}" + f"{players[1]}" + f"{players[2]}" + "地主牌：" + f"{deck[51]}" + f"{deck[52]}" + f"{deck[53]}"
+
+playerTurn = landLordNumber
+table = seriesValidate({})
+
+print(gameStartMessage)
+print(players[landLordNumber].gameStartMessage())
+
+while not(players[0].isWin() | players[1].isWin() | players[2].isWin()):
+    pass
