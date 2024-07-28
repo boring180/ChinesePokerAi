@@ -26,13 +26,18 @@ class Card:
     def __str__(self):
         return suits[self.suit] + values[self.value]
     
+    def getID(self):
+        return self.id
+    
 def readCardId(card):
-    return card.id  
+    return card.getID()
     
 class player:
-    def __init__(self, name, cards):
+    def __init__(self, name):
         self.name = name
         self.landLord =  False
+    
+    def cardsAssign(self, cards):
         cards.sort(key = readCardId)
         self.cards = cards
 
@@ -54,11 +59,17 @@ class player:
     def isWin(self):
         return len(self.cards) == 0
     
-    def setMessage(self, respond):
-        self.message = respond
-        
-    def getMessage(self):
-        return self.message
+    def cardsValid(self, cast, early):
+        cards = []
+        for i in range (len(self.cards)):
+            if (f"{self.cards[i]}" in cast):
+                cards.append[self.cards[i]]
+        return early.compare(seriesValidate(cards))
+    
+    def castCards(self, cast):
+        for i in range (len(cast)):
+            self.cards.remove(cast[i])
+
     
     def getCardsString(self):
         seriesString = ''
@@ -71,7 +82,7 @@ seriesType = ['', '单牌', '对子', '三张', '顺子', '连对', '飞机', '�
 
 class series:
     # constructor, create a serires object by the serires's type, value, amount of cards(连对，顺子), addons(三带，飞机，四带)
-    def __init__(self, seriesCards = {}, type = '违规', value = 0, amount = 0, addOn1 = 0, addOn2 = 0):
+    def __init__(self, seriesCards = [], type = '违规', value = 0, amount = 0, addOn1 = 0, addOn2 = 0):
         self.seriesCards = seriesCards
         self.type = type
         self.value = value
@@ -223,27 +234,72 @@ def seriesValidate(cards):
     # 错误牌型
     return series(seriesCards = cards)
     
+players = [player('玩家一'), player('玩家二'), player('玩家三')]
 
-deck = [Card(suit, value) for suit in range(4) for value in range(13)]
+# Game start
+# Parameters:
+#   Players: list of the players of the game
+# Return:
+#   The landlord cards of the game
+def gameStart(players):
+    deck = [Card(suit, value) for suit in range(4) for value in range(13)]
+    deck.append(Card(4, 13))
+    deck.append(Card(4, 14))
 
-deck.append(Card(4, 13))
-deck.append(Card(4, 14))
+    random.shuffle(deck)
 
-random.shuffle(deck)
+    players[0].cardsAssign(deck[0:17])
+    players[1].cardsAssign(deck[17:34])
+    players[2].cardsAssign(deck[34:51])
 
-landLordNumber = random.randrange(3)
+    return deck[51:54]
 
-players = [player('玩家一', deck[0:17]), player('玩家二',deck[17:34]), player('玩家三', deck[34:51])]
+# landlordDecide
+# Parameters:
+#   players: list of the players of the game
+#   landLordCards: The extrea three cards of the landlord
+#   landLordNumer: Which player will be the landlord
+#   rand: Whether to use random decision on landlord assign
+# Return:
+#   The message output after the landlord is decided
+#   The landLordNumer
+def landlordDecide(players, landLordCards, landLordNumber = 0, rand = True):
+    if rand:
+        landLordNumber = random.randrange(3)
+    
+    players[landLordNumber].becomeLandLord(landLordCards)
 
-players[landLordNumber].becomeLandLord(deck[51:54])
+    return landLordNumber, f"{players[0]}" + f"{players[1]}" + f"{players[2]}" + "地主牌：" + f"{landLordCards[0]}" + f"{landLordCards[1]}" + f"{landLordCards[2]}"
 
-gameStartMessage = f"{players[0]}" + f"{players[1]}" + f"{players[2]}" + "地主牌：" + f"{deck[51]}" + f"{deck[52]}" + f"{deck[53]}"
+# cardDisplay
+# Parameters:
+#   Cards: The cards to display
+# Return:
+#   The string repsentation of the cards
+def cardsDisplay(cards):
+    seriesString = ''
+    for  i in range(len(cards)):
+        seriesString += str(cards[i])
+        return seriesString
 
-playerTurn = landLordNumber
-table = seriesValidate({})
+# gameEnd
+# Parameters:
+#   players: list of the players of the game
+# Return:
+#   game end or not
+#   the index of the winner
+def gameEnd(players):
+    if players[0].isWin():
+        return True, 0
+    if players[1].isWin():
+        return True, 1
+    if players[2].isWin():
+        return True, 2
+    return False, 0
+    
+landLordNumber, gameStartMessage = landlordDecide(players, gameStart(players))
 
 print(gameStartMessage)
-print(players[landLordNumber].gameStartMessage())
 
-while not(players[0].isWin() | players[1].isWin() | players[2].isWin()):
-    pass
+print(players[0].getCardsString())
+
