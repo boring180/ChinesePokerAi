@@ -5,6 +5,7 @@ import os
 # Constants
 suits = ['♠', '♥', '♣', '♦', '']
 values = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2', '小王', '大王']
+chineseNumber = ['一i','二','三']
 
 # Define
 def validateDeal(cards)->bool:
@@ -53,8 +54,8 @@ class player:
     def isLandLord(self):
         return self.landLord
     
-    def gameStartMessage(self):
-        return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() 
+    def playerTurn(self,table):
+        return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '牌桌上的牌是' + f"{table}" +'输入‘PASS’跳过本次出牌，如果出牌请用♠3（红桃3）的格式，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。'
         
     def isWin(self):
         return len(self.cards) == 0
@@ -63,8 +64,8 @@ class player:
         cards = []
         for i in range (len(self.cards)):
             if (f"{self.cards[i]}" in cast):
-                cards.append[self.cards[i]]
-        return early.compare(seriesValidate(cards))
+                cards.append(self.cards[i])
+        return seriesValidate(cards), cards
     
     def castCards(self, cast):
         for i in range (len(cast)):
