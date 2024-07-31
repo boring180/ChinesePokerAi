@@ -122,42 +122,41 @@ def seriesValidate(cards):
     
     length = len(cards)
     
-    match length:
-        case 0:
-            # 空
-            return series(seriesCards = cards)
+    if length == 0:
+        # 空
+        return series(seriesCards = cards)
         
-        case 1:
-            # 单牌
-            return series(seriesCards = cards, type = '单牌', value = values[0])
+    if length == 1:
+        # 单牌
+        return series(seriesCards = cards, type = '单牌', value = values[0])
     
-        case 2:
-            # 对子 或 王炸
-            if values[0] == values[1]:
-                return series(seriesCards = cards, type = '对子', value = values[0])
-            if values[0] == 13 and values[1] == 14:
-                return series(seriesCards = cards, type = '王炸')
+    if length == 2:
+        # 对子 或 王炸
+        if values[0] == values[1]:
+            return series(seriesCards = cards, type = '对子', value = values[0])
+        if values[0] == 13 and values[1] == 14:
+            return series(seriesCards = cards, type = '王炸')
     
-        case 3:
-            # 三
-            if values[0] == values[1] and values[1] == values[2]:
-                return series(seriesCards = cards, type = '三带', value = values[0])
+    if length == 3:
+        # 三
+        if values[0] == values[1] and values[1] == values[2]:
+            return series(seriesCards = cards, type = '三带', value = values[0])
         
-        case 4:
-            # 三带一 或 炸弹
-            if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3]
-                or values[1] == values[2] and values[2] == values[3] and values[3] != values[0]
-                ):
-                return series(seriesCards = cards, type = '三带', value = values[1], addOn1 = 1)
-            if values[0] == values[1] and values[1] == values[2] and values[2] == values[3]:
-                return series(seriesCards = cards, type = '炸弹', value = values[0])
+    if length == 4:
+        # 三带一 或 炸弹
+        if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3]
+            or values[1] == values[2] and values[2] == values[3] and values[3] != values[0]
+            ):
+            return series(seriesCards = cards, type = '三带', value = values[1], addOn1 = 1)
+        if values[0] == values[1] and values[1] == values[2] and values[2] == values[3]:
+            return series(seriesCards = cards, type = '炸弹', value = values[0])
     
-        case 5:
-            # 三带一对
-            if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3] and values[3] == values[4]
-                or values[2] == values[3] and values[3] == values[4] and values[4] != values[0] and values[0] == values[1]
-                ):
-                return series(seriesCards = cards, type = '三带', value = values[2], amount = length)
+    if length == 5:
+        # 三带一对
+        if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3] and values[3] == values[4]
+            or values[2] == values[3] and values[3] == values[4] and values[4] != values[0] and values[0] == values[1]
+            ):
+            return series(seriesCards = cards, type = '三带', value = values[2], amount = length)
             
         #case 6:
             # 四带二
@@ -234,7 +233,7 @@ def seriesValidate(cards):
     # 错误牌型
     return series(seriesCards = cards)
     
-players = [player('玩家一'), player('玩家二'), player('玩家三')]
+#players = [player('玩家一'), player('玩家二'), player('玩家三')]
 
 # Game start
 # Parameters:
@@ -293,13 +292,8 @@ def gameEnd(players):
         return True, 0
     if players[1].isWin():
         return True, 1
+    
     if players[2].isWin():
         return True, 2
     return False, 0
     
-landLordNumber, gameStartMessage = landlordDecide(players, gameStart(players))
-
-print(gameStartMessage)
-
-print(players[0].getCardsString())
-
