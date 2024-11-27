@@ -3,3 +3,4 @@ chatglm-6b/
 config.json
 ChatGPT_API.ipynb
 API_llm.py
+__pycache__/API_llm.cpython-311.pyc
