@@ -63,9 +63,9 @@ class player:
     
     def playerTurn(self,table):
         if table.type != '违规':
-            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '牌桌上的牌是' + str(table.seriesCards) +'输入‘PASS’可以跳过本次出牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
+            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '上家出的牌是' + str(table) +'输入‘PASS’可以跳过本次出牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
         else:
-            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '牌桌上的牌是' + str(table.seriesCards) +'你现在可以出任意符合规则的牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
+            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '上家出的牌是' + str(table) +'你现在可以出任意符合规则的牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
         
     def isWin(self):
         return len(self.cards) == 0
@@ -109,20 +109,22 @@ class series:
     
     def compare(self, lower):
         if self.type == '违规':
-            return False
+            return False , '违规'
         if lower.type == '违规' :
-            return True
+            return True, '出牌'
         if lower.type == '王炸':
-            return True
+            return False, '大你'
         if self.type == '王炸':
-            return False
+            return True, '出牌'
         if lower.type == '炸弹' and self.type != '炸弹':
-            return True
+            return False, '大你'
         if lower.type != '炸弹' and self.type == '炸弹':
-            return False
+            return True, '出牌'
         if lower.type != self.type or lower.amount != self.amount or lower.addOn1 != self.addOn1 or lower.addOn2 != self.addOn2:
-            return False
-        return lower.value > self.value
+            return True, '出牌'
+        if lower.value < self.value:
+            return True, '出牌'
+        return False, '大你'
 
 
 # Helper Functions
