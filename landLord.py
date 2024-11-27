@@ -63,9 +63,9 @@ class player:
     
     def playerTurn(self,table):
         if table.type != '违规':
-            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '上家出的牌是' + str(table) +'输入‘PASS’可以跳过本次出牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
+            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '上家出了' + str(table) +'输入‘PASS’可以跳过本次出牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
         else:
-            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '上家出的牌是' + str(table) +'你现在可以出任意符合规则的牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
+            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '你现在可以出任意符合规则的牌，四种花色分别是♠, ♥, ♣, ♦。如果想出大小王请直接输入‘大王’和‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。示例：♠3'
         
     def isWin(self):
         return len(self.cards) == 0
