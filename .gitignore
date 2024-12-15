@@ -7,3 +7,4 @@ __pycache__/API_llm.cpython-311.pyc
 *.txt
 *.pyc
 *.txt
+API_key.json

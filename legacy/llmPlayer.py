@@ -1,7 +1,7 @@
 # For llamaPlayer
 # from transformers import AutoTokenizer, AutoModel 
 
-import landLord as ll
+import game_control as ll
 
 
 # tokenizer = AutoTokenizer.from_pretrained("./chatglm-6b-int4", trust_remote_code=True, revision="v1.1.0")
