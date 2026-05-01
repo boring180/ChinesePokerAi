@@ -1,314 +1,455 @@
-# Import
+"""
+Chinese Poker (Dou Di Zhu) Game Engine
+Simplified and refactored for AI research
+"""
+
 import random
-import os
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
+from enum import Enum
+
+
+class CardType(Enum):
+    """Card types/series in Chinese Poker"""
+    INVALID = "违规"
+    SINGLE = "单牌"
+    PAIR = "对子"
+    TRIPLE = "三张"
+    TRIPLE_WITH_SINGLE = "三带一"
+    TRIPLE_WITH_PAIR = "三带二"
+    STRAIGHT = "顺子"
+    STRAIGHT_PAIRS = "连对"
+    AIRPLANE = "飞机"
+    BOMB = "炸弹"
+    ROCKET = "王炸"
+    FOUR_WITH_TWO = "四带二"
+
 
 # Constants
-suits = ['♠', '♥', '♣', '♦', '']
-values = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2', '小王', '大王']
-chineseNumber = ['一','二','三']
+SUITS = ['♠', '♥', '♣', '♦', '']
+VALUES = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2', '小王', '大王']
 
-# Define
-def validateDeal(cards)->bool:
-    pass
 
-def validateLate(cardsEarly, cardsLate)->bool:
-    pass
+def get_card_value_order(value: str) -> int:
+    """Get the numeric order of a card value for comparison"""
+    return VALUES.index(value)
 
-# Ramdom seed
 
-# Class
+@dataclass
 class Card:
-    # Constructor: input two integer: suit and value
-    def __init__(self, suit, value):
-        self.suit = suit
-        self.value = value
-        self.id = 4 * value + suit 
-
+    """Represents a playing card"""
+    suit: int  # 0-3 for ♠♥♣♦, 4 for jokers
+    value: int  # 0-14 corresponding to VALUES
+    
+    def __post_init__(self):
+        self.id = 4 * self.value + self.suit if self.suit < 4 else 52 + (self.value - 13)
+    
     def __str__(self):
-        return suits[self.suit] + values[self.value]
+        return SUITS[self.suit] + VALUES[self.value]
     
-    def getID(self):
-        return self.id
+    def __repr__(self):
+        return f"Card({SUITS[self.suit]}{VALUES[self.value]})"
     
-def readCardId(card):
-    return card.getID()
+    def __eq__(self, other):
+        if not isinstance(other, Card):
+            return False
+        return self.value == other.value and self.suit == other.suit
     
-class player:
-    def __init__(self, name):
-        self.name = name
-        self.landLord =  False
-        self.history = []
-        
-    def addHistory(self, history):
-        self.history.append(history)
-    
-    def getHistory(self):
-        return self.history
-    
-    def cardsAssign(self, cards):
-        cards.sort(key = readCardId)
-        self.cards = cards
+    def __hash__(self):
+        return hash((self.suit, self.value))
 
-    def __str__(self):
-        landLordYesNo = "是" if(self.landLord) else "不是"
-        return self.name + "， 有" + f"{len(self.cards)}" + "张手牌， " + landLordYesNo + "地主。"
-        
-    def becomeLandLord(self,deckAppend):
-        self.landLord = True
-        self.cards.extend(deckAppend)
-        self.cards.sort(key = readCardId)
-        
-    def isLandLord(self):
-        return self.landLord
+
+@dataclass
+class Series:
+    """Represents a card series/play"""
+    cards: List[Card] = field(default_factory=list)
+    type: CardType = CardType.INVALID
+    value: int = 0  # Main value for comparison
+    length: int = 0  # For straights, consecutive pairs, airplanes
+    kicker_count: int = 0  # For triples with kickers
     
-    def playerTurn(self,table):
-        if table.type != '违规':
-            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '上家出了' + str(table) +'输入‘PASS’可以跳过本次出牌，四种花色分别是♠, ♥, ♣, ♦。大小王请直接输入‘大王’或‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。一些示例：♠♠3♥3♣3'
+    def __str__(self):
+        cards_str = ''.join(str(c) for c in self.cards)
+        return f"{self.type.value}: {cards_str}"
+    
+    def can_beat(self, other: 'Series') -> Tuple[bool, str]:
+        """
+        Check if this series can beat another series.
+        Returns (can_beat, reason)
+        """
+        if self.type == CardType.INVALID:
+            return False, "无效牌型"
+        
+        if other.type == CardType.INVALID:
+            return True, "首家出牌"
+        
+        # Rocket beats everything
+        if self.type == CardType.ROCKET:
+            return True, "王炸最大"
+        
+        if other.type == CardType.ROCKET:
+            return False, "对方王炸"
+        
+        # Bomb beats non-bombs
+        if self.type == CardType.BOMB and other.type != CardType.BOMB:
+            return True, "炸弹压制"
+        
+        if self.type != CardType.BOMB and other.type == CardType.BOMB:
+            return False, "对方炸弹"
+        
+        # Same type comparison
+        if self.type != other.type:
+            return False, "牌型不同"
+        
+        if self.length != other.length:
+            return False, "长度不同"
+        
+        if self.kicker_count != other.kicker_count:
+            return False, "带牌数量不同"
+        
+        if self.value > other.value:
+            return True, "牌值更大"
+        
+        return False, "牌值不够大"
+
+
+def validate_series(cards: List[Card]) -> Series:
+    """
+    Validate a series of cards and determine its type.
+    """
+    if not cards:
+        return Series(cards=cards, type=CardType.INVALID)
+    
+    n = len(cards)
+    values = sorted([c.value for c in cards])
+    
+    # Single card
+    if n == 1:
+        return Series(cards=cards, type=CardType.SINGLE, value=values[0])
+    
+    # Pair or Rocket
+    if n == 2:
+        if values[0] == values[1]:
+            return Series(cards=cards, type=CardType.PAIR, value=values[0])
+        if values == [13, 14]:  # Small + Big Joker
+            return Series(cards=cards, type=CardType.ROCKET, value=15)
+        return Series(cards=cards, type=CardType.INVALID)
+    
+    # Three cards
+    if n == 3:
+        if values[0] == values[1] == values[2]:
+            return Series(cards=cards, type=CardType.TRIPLE, value=values[0])
+        return Series(cards=cards, type=CardType.INVALID)
+    
+    # Four cards
+    if n == 4:
+        # Bomb
+        if len(set(values)) == 1:
+            return Series(cards=cards, type=CardType.BOMB, value=values[0])
+        # Triple with single
+        if (values[0] == values[1] == values[2] != values[3] or
+            values[1] == values[2] == values[3] != values[0]):
+            main_value = values[1]  # Middle value is the triple
+            return Series(cards=cards, type=CardType.TRIPLE_WITH_SINGLE, 
+                         value=main_value, kicker_count=1)
+        return Series(cards=cards, type=CardType.INVALID)
+    
+    # Five cards
+    if n == 5:
+        # Triple with pair
+        if (values[0] == values[1] == values[2] and values[3] == values[4] and values[2] != values[3]):
+            return Series(cards=cards, type=CardType.TRIPLE_WITH_PAIR, 
+                         value=values[0], kicker_count=2)
+        if (values[0] == values[1] and values[2] == values[3] == values[4] and values[1] != values[2]):
+            return Series(cards=cards, type=CardType.TRIPLE_WITH_PAIR, 
+                         value=values[2], kicker_count=2)
+        # Straight
+        if is_straight(values):
+            return Series(cards=cards, type=CardType.STRAIGHT, 
+                         value=values[-1], length=n)
+        return Series(cards=cards, type=CardType.INVALID)
+    
+    # Six cards
+    if n == 6:
+        # Airplane (two consecutive triples)
+        if (values[0] == values[1] == values[2] and 
+            values[3] == values[4] == values[5] and 
+            values[2] + 1 == values[3] and values[5] < 12):  # Not ending with 2
+            return Series(cards=cards, type=CardType.AIRPLANE, 
+                         value=values[3], length=2)
+        # Four with two singles
+        # Count occurrences
+        from collections import Counter
+        counts = Counter(values)
+        if 4 in counts.values() and len(counts) == 3:
+            four_val = [k for k, v in counts.items() if v == 4][0]
+            return Series(cards=cards, type=CardType.FOUR_WITH_TWO, 
+                         value=four_val, kicker_count=2)
+        # Straight
+        if is_straight(values):
+            return Series(cards=cards, type=CardType.STRAIGHT, 
+                         value=values[-1], length=n)
+        # Straight pairs (3 pairs)
+        if is_straight_pairs(values):
+            return Series(cards=cards, type=CardType.STRAIGHT_PAIRS, 
+                         value=values[-1], length=3)
+        return Series(cards=cards, type=CardType.INVALID)
+    
+    # More than 6 cards
+    if n > 6:
+        # Straights (5+)
+        if n >= 5 and is_straight(values):
+            return Series(cards=cards, type=CardType.STRAIGHT, 
+                         value=values[-1], length=n)
+        # Straight pairs (6+, even)
+        if n >= 6 and n % 2 == 0 and is_straight_pairs(values):
+            return Series(cards=cards, type=CardType.STRAIGHT_PAIRS, 
+                         value=values[-1], length=n // 2)
+        # Airplane with wings
+        # Simplified: check for consecutive triples pattern
+        airplane = detect_airplane(values, n)
+        if airplane:
+            return airplane
+    
+    return Series(cards=cards, type=CardType.INVALID)
+
+
+def is_straight(values: List[int]) -> bool:
+    """Check if values form a valid straight (5+ consecutive, not including 2 or jokers)"""
+    if len(values) < 5:
+        return False
+    if values[-1] >= 12:  # Ends with 2 or joker - invalid
+        return False
+    return all(values[i] + 1 == values[i + 1] for i in range(len(values) - 1))
+
+
+def is_straight_pairs(values: List[int]) -> bool:
+    """Check if values form valid consecutive pairs (3+ pairs)"""
+    if len(values) < 6 or len(values) % 2 != 0:
+        return False
+    if values[-1] >= 12:  # Ends with 2 - invalid
+        return False
+    # Check pairs
+    for i in range(0, len(values), 2):
+        if values[i] != values[i + 1]:
+            return False
+    # Check consecutive
+    pair_values = [values[i] for i in range(0, len(values), 2)]
+    return all(pair_values[i] + 1 == pair_values[i + 1] for i in range(len(pair_values) - 1))
+
+
+def detect_airplane(values: List[int], n: int) -> Optional[Series]:
+    """
+    Detect airplane pattern (consecutive triples with optional wings).
+    Returns Series if valid airplane, None otherwise.
+    """
+    from collections import Counter
+    counts = Counter(values)
+    
+    # Find triples
+    triples = sorted([v for v, c in counts.items() if c >= 3 and v < 12])  # Exclude 2 and jokers
+    
+    if len(triples) < 2:
+        return None
+    
+    # Find longest consecutive triples sequence
+    best_start = 0
+    best_len = 1
+    current_start = 0
+    current_len = 1
+    
+    for i in range(1, len(triples)):
+        if triples[i] == triples[i - 1] + 1:
+            current_len += 1
         else:
-            return '你是:' + self.name + ' 你的手牌是:' +  self.getCardsString() + '上家都不要你的牌，请按规则出牌，不能跳过。四种花色分别是♠, ♥, ♣, ♦。大小王请直接输入‘大王’或‘小王’。只需要回答你将要打出的牌，不需要做出解释或者提供其他信息。一些示例：♠3♥3♣3'
-        
-    def isWin(self):
+            if current_len > best_len:
+                best_len = current_len
+                best_start = current_start
+            current_start = i
+            current_len = 1
+    
+    if current_len > best_len:
+        best_len = current_len
+        best_start = current_start
+    
+    if best_len < 2:
+        return None
+    
+    # Get the consecutive triples
+    seq_triples = triples[best_start:best_start + best_len]
+    triple_cards_count = best_len * 3
+    
+    # Check remaining cards (wings)
+    remaining = n - triple_cards_count
+    if remaining > best_len * 2:  # Can't have more than 2 cards per triple as wings
+        return None
+    
+    # Verify the wings exist
+    used = []
+    for v in seq_triples:
+        used.extend([v] * 3)
+    
+    wings = [v for v in values if v not in used or used.remove(v) is None]
+    # Simple validation: wings should exist
+    
+    return Series(
+        cards=[],  # Will be populated by caller
+        type=CardType.AIRPLANE,
+        value=seq_triples[-1],
+        length=best_len,
+        kicker_count=remaining
+    )
+
+
+class Player:
+    """Represents a game player"""
+    
+    def __init__(self, name: str):
+        self.name = name
+        self.cards: List[Card] = []
+        self.is_landlord = False
+        self.history: List[dict] = []
+    
+    def assign_cards(self, cards: List[Card]):
+        """Assign cards to player, sorted by value"""
+        self.cards = sorted(cards, key=lambda c: c.value * 4 + c.suit)
+    
+    def become_landlord(self, extra_cards: List[Card]):
+        """Make player landlord with extra cards"""
+        self.is_landlord = True
+        self.cards.extend(extra_cards)
+        self.cards = sorted(self.cards, key=lambda c: c.value * 4 + c.suit)
+    
+    def get_cards_string(self) -> str:
+        """Get string representation of hand"""
+        return ''.join(str(c) for c in self.cards)
+    
+    def play_cards(self, cards: List[Card]) -> bool:
+        """Remove cards from hand after playing"""
+        for card in cards:
+            if card not in self.cards:
+                return False
+        for card in cards:
+            self.cards.remove(card)
+        return True
+    
+    def has_cards(self, card_strs: List[str]) -> List[Card]:
+        """Check if player has specific cards by string representation"""
+        result = []
+        remaining = self.cards[:]
+        for s in card_strs:
+            found = False
+            for card in remaining:
+                if str(card) == s and not found:
+                    result.append(card)
+                    remaining.remove(card)
+                    found = True
+        return result if len(result) == len(card_strs) else []
+    
+    def is_winner(self) -> bool:
+        """Check if player has won (no cards left)"""
         return len(self.cards) == 0
     
-    def cardsValid(self, cast, early):
-        cards = []
-        for i in range (len(self.cards)):
-            if (f"{self.cards[i]}" in cast):
-                cards.append(self.cards[i])
-        return seriesValidate(cards), cards
+    def add_history(self, entry: dict):
+        """Add to conversation history"""
+        self.history.append(entry)
     
-    def castCards(self, cast):
-        for i in range (len(cast)):
-            self.cards.remove(cast[i])
-
-    
-    def getCardsString(self):
-        seriesString = ''
-        for  i in range(len(self.cards)):
-            seriesString += str(self.cards[i])
-        return seriesString
-
-                
-seriesType = ['', '单牌', '对子', '三张', '顺子', '连对', '飞机', '四带', '炸弹', '王炸']
-
-class series:
-    # constructor, create a serires object by the serires's type, value, amount of cards(连对，顺子), addons(三带，飞机，四带)
-    def __init__(self, seriesCards = [], type = '违规', value = 0, amount = 0, addOn1 = 0, addOn2 = 0):
-        self.seriesCards = seriesCards
-        self.type = type
-        self.value = value
-        self.amount = amount
-        self.addOn1 = addOn1
-        self.addOn2 = addOn2
+    def get_history(self) -> List[dict]:
+        """Get conversation history"""
+        return self.history
     
     def __str__(self):
-        seriesString = ''
-        for  i in range(len(self.seriesCards)):
-            seriesString += str(self.seriesCards[i])
-        return '牌型：' + self.type + ' ' + seriesString
-    
-    def compare(self, lower):
-        if self.type == '违规':
-            return False , '违规'
-        if lower.type == '违规' :
-            return True, '出牌'
-        if lower.type == '王炸':
-            return False, '大你'
-        if self.type == '王炸':
-            return True, '出牌'
-        if lower.type == '炸弹' and self.type != '炸弹':
-            return False, '大你'
-        if lower.type != '炸弹' and self.type == '炸弹':
-            return True, '出牌'
-        if lower.type != self.type or lower.amount != self.amount or lower.addOn1 != self.addOn1 or lower.addOn2 != self.addOn2:
-            return True, '出牌'
-        if lower.value < self.value:
-            return True, '出牌'
-        return False, '大你'
+        landlord_status = "是" if self.is_landlord else "不是"
+        return f"{self.name}，有{len(self.cards)}张手牌，{landlord_status}地主。"
 
 
-# Helper Functions
-def seriesValidate(cards):
-    values = [card.value for card in cards]
-    values.sort()
+class GameTable:
+    """Represents the current play on the table"""
     
-    # For debugging
-    # print(values)
+    def __init__(self):
+        self.current_series: Series = Series()
+        self.last_player: Optional[str] = None
+        self.pass_count = 0
     
-    length = len(cards)
+    def clear(self):
+        """Clear the table (new round)"""
+        self.current_series = Series()
+        self.last_player = None
+        self.pass_count = 0
     
-    if length == 0:
-        # 空
-        return series(seriesCards = cards)
-        
-    if length == 1:
-        # 单牌
-        return series(seriesCards = cards, type = '单牌', value = values[0])
+    def play(self, player_name: str, series: Series):
+        """Play a series on the table"""
+        self.current_series = series
+        self.last_player = player_name
+        self.pass_count = 0
     
-    if length == 2:
-        # 对子 或 王炸
-        if values[0] == values[1]:
-            return series(seriesCards = cards, type = '对子', value = values[0])
-        if values[0] == 13 and values[1] == 14:
-            return series(seriesCards = cards, type = '王炸')
+    def pass_turn(self):
+        """Player passes"""
+        self.pass_count += 1
     
-    if length == 3:
-        # 三
-        if values[0] == values[1] and values[1] == values[2]:
-            return series(seriesCards = cards, type = '三带', value = values[0])
-        
-    if length == 4:
-        # 三带一 或 炸弹
-        if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3]
-            or values[1] == values[2] and values[2] == values[3] and values[3] != values[0]
-            ):
-            return series(seriesCards = cards, type = '三带', value = values[1], addOn1 = 1)
-        if values[0] == values[1] and values[1] == values[2] and values[2] == values[3]:
-            return series(seriesCards = cards, type = '炸弹', value = values[0])
-    
-    if length == 5:
-        # 三带一对
-        if (values[0] == values[1] and values[1] == values[2] and values[2] != values[3] and values[3] == values[4]
-            or values[2] == values[3] and values[3] == values[4] and values[4] != values[0] and values[0] == values[1]
-            ):
-            return series(seriesCards = cards, type = '三带', value = values[2], amount = length)
-            
-        #case 6:
-            # 四带二
-            # 飞机不带
-        #    pass
-        
-        #case 8:
-            # 四带两对
-            # 飞机带单牌
-        #    pass
-        
-        #case 9:
-            # 三个翅膀的飞机
-        #    pass
-        
-        #case 10:
-            # 飞机带两对
-        #    pass
-            
-        #case 12:
-            # 三个翅膀的飞机带单牌
-            # 四个翅膀的飞机
-        #    pass
-            
-        #case 15:
-            # 三个翅膀的飞机带对牌
-            # 五个翅膀的飞机
-        #    pass
-        
-        #case 16:
-            # 四个翅膀的飞机带单牌
-        #    pass
-            
-        #case 18:
-            # 六个翅膀的飞机
-        #    pass
-        
-        #case 20:
-            # 四个翅膀的飞机带对牌
-        #    pass
-        
-    # 顺子，连对 不能以2结尾
-    if values[length-1] == 12:
-        return series(seriesCards = cards)
-    
-    # 顺子
-    if length > 4:
-        straight = True
-    else:
-        straight = False
-        
-    for i in range(length):
-        if i > 0 and values[i] != values[i-1] + 1:
-            straight = False
-    if straight:
-            return series(seriesCards = cards, type = '顺子', value = values[length-1], amount = length)
-        
-    # 连对
-    if length > 5 and length % 2 == 0:
-        straightPairs = True
-    else:
-        straightPairs = False
-    for i in range(length):
-        if i  == 0:
-            continue
-        if i % 2 == 1 and values[i] != values[i - 1]:
-            straightPairs = False
-        if i % 2 == 0 and values[i] != values[i - 2] + 1:
-            straightPairs = False
+    def should_clear(self) -> bool:
+        """Check if table should be cleared (2 consecutive passes)"""
+        return self.pass_count >= 2
 
-    if straightPairs:
-            return series(seriesCards = cards, type = '连对', value = values[length-1], amount = length)
-        
-    # 错误牌型
-    return series(seriesCards = cards)
-    
-#players = [player('玩家一'), player('玩家二'), player('玩家三')]
 
-# Game start
-# Parameters:
-#   Players: list of the players of the game
-# Return:
-#   The landlord cards of the game
-def gameStart(players):
+def create_deck() -> List[Card]:
+    """Create and return a shuffled deck"""
     deck = [Card(suit, value) for suit in range(4) for value in range(13)]
-    deck.append(Card(4, 13))
-    deck.append(Card(4, 14))
-
+    deck.append(Card(4, 13))  # Small joker
+    deck.append(Card(4, 14))  # Big joker
     random.shuffle(deck)
+    return deck
 
-    players[0].cardsAssign(deck[0:17])
-    players[1].cardsAssign(deck[17:34])
-    players[2].cardsAssign(deck[34:51])
 
+def deal_cards(players: List[Player]) -> List[Card]:
+    """Deal cards to players, return landlord cards"""
+    deck = create_deck()
+    players[0].assign_cards(deck[0:17])
+    players[1].assign_cards(deck[17:34])
+    players[2].assign_cards(deck[34:51])
     return deck[51:54]
 
-# landlordDecide
-# Parameters:
-#   players: list of the players of the game
-#   landLordCards: The extrea three cards of the landlord
-#   landLordNumer: Which player will be the landlord
-#   rand: Whether to use random decision on landlord assign
-# Return:
-#   The message output after the landlord is decided
-#   The landLordNumer
-def landlordDecide(players, landLordCards, landLordNumber = 0, rand = True):
-    if rand:
-        landLordNumber = random.randrange(3)
-    
-    players[landLordNumber].becomeLandLord(landLordCards)
 
-    return landLordNumber, f"{players[0]}" + f"{players[1]}" + f"{players[2]}" + "地主牌：" + f"{landLordCards[0]}" + f"{landLordCards[1]}" + f"{landLordCards[2]}"
+def assign_landlord(players: List[Player], landlord_cards: List[Card], 
+                   landlord_idx: int = 0, random_assign: bool = False) -> int:
+    """Assign landlord role to a player"""
+    if random_assign:
+        landlord_idx = random.randrange(3)
+    players[landlord_idx].become_landlord(landlord_cards)
+    return landlord_idx
 
-# cardDisplay
-# Parameters:
-#   Cards: The cards to display
-# Return:
-#   The string repsentation of the cards
-def cardsDisplay(cards):
-    seriesString = ''
-    for  i in range(len(cards)):
-        seriesString += str(cards[i])
-        return seriesString
 
-# gameEnd
-# Parameters:
-#   players: list of the players of the game
-# Return:
-#   game end or not
-#   the index of the winner
+def check_game_end(players: List[Player]) -> Tuple[bool, int]:
+    """Check if game has ended, return (ended, winner_idx)"""
+    for i, player in enumerate(players):
+        if player.is_winner():
+            return True, i
+    return False, -1
+
+
+def get_game_state_message(players: List[Player], landlord_cards: List[Card]) -> str:
+    """Get game start state message"""
+    landlord_info = f"地主牌：{landlord_cards[0]}{landlord_cards[1]}{landlord_cards[2]}"
+    return f"{players[0]}\n{players[1]}\n{players[2]}\n{landlord_info}"
+
+
+# Legacy compatibility functions
+def gameStart(players):
+    """Legacy function for game start"""
+    return deal_cards(players)
+
+
+def landlordDecide(players, landLordCards, landLordNumber=0, rand=True):
+    """Legacy function for landlord decision"""
+    idx = assign_landlord(players, landLordCards, landLordNumber, rand)
+    return idx, get_game_state_message(players, landLordCards)
+
+
 def gameEnd(players):
-    if players[0].isWin():
-        return True, 0
-    if players[1].isWin():
-        return True, 1
-    
-    if players[2].isWin():
-        return True, 2
-    return False, 0
-    
+    """Legacy function for game end check"""
+    return check_game_end(players)
+
+
+def seriesValidate(cards):
+    """Legacy function for series validation"""
+    return validate_series(cards)
