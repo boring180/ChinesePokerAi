@@ -153,6 +153,118 @@ class NormalAgent(BaseAgent):
         return False, response, cards
 
 
+class GuideAgent(BaseAgent):
+    """
+    Guide-Reading Agent.
+    Uses strategy guides (documents) for decision-making.
+    No CoT or tool calling - just RAG-style guide consultation.
+    """
+    
+    def __init__(self, name: str, guide_content: str, config: Optional[AgentConfig] = None):
+        super().__init__(name, config or AgentConfig(use_guide=True))
+        self.guide_content = guide_content
+        # Extract key sections for different scenarios
+        self._extract_guide_sections()
+    
+    def _extract_guide_sections(self):
+        """Pre-process guide to extract relevant sections"""
+        # Simple section extraction based on headers
+        self.guide_sections = {
+            "general": self.guide_content[:1500],  # First part as general strategy
+            "bomb": "",
+            "landlord": "",
+            "farmer": "",
+            "endgame": "",
+        }
+        
+        # Try to extract specific sections
+        if "炸弹" in self.guide_content:
+            idx = self.guide_content.find("炸弹")
+            self.guide_sections["bomb"] = self.guide_content[idx:idx+500]
+        
+        if "地主" in self.guide_content:
+            idx = self.guide_content.find("地主")
+            self.guide_sections["landlord"] = self.guide_content[idx:idx+800]
+        
+        if "农民" in self.guide_content:
+            idx = self.guide_content.find("农民")
+            self.guide_sections["farmer"] = self.guide_content[idx:idx+800]
+        
+        if "残局" in self.guide_content or "剩牌" in self.guide_content:
+            idx = self.guide_content.find("残局") if "残局" in self.guide_content else self.guide_content.find("剩牌")
+            self.guide_sections["endgame"] = self.guide_content[idx:idx+500]
+    
+    def get_system_prompt(self, is_landlord: bool) -> str:
+        role = "地主" if is_landlord else "农民"
+        return f"""你是一个斗地主AI玩家。你是{self.name}，角色是{role}。
+
+你的特点是：依赖策略指南进行决策。你会根据当前牌局情况，参考专业策略指南来做出最优选择。
+
+你只需要回答要出的牌，格式如: ♠3♥3♣3
+如果不出，回答: PASS 或 不出
+不要解释，直接回答牌型。"""
+    
+    def build_prompt(self, player: Player, game_state: GameState,
+                     is_retry: bool = False, error_msg: str = "") -> str:
+        hand_str = player.get_cards_string()
+        
+        # Select relevant guide sections based on game state
+        relevant_guide = self._select_relevant_guide(player, game_state)
+        
+        lines = [
+            "【策略指南参考】",
+            relevant_guide,
+            "",
+            "=" * 40,
+            "",
+            f"你的手牌: {hand_str} (共{len(player.cards)}张)",
+        ]
+        
+        # Add table info
+        if game_state.table_series.type == CardType.INVALID:
+            lines.append("桌上无牌，你是首家可出任意有效牌型")
+        else:
+            lines.append(f"桌上: {game_state.table_series} (由{game_state.last_player_name}打出)")
+        
+        # Add opponent info
+        for name, remaining, role in game_state.get_opponents_info(player.name):
+            lines.append(f"对手 {name} ({role}): 剩{remaining}张牌")
+        
+        if is_retry:
+            lines.append(f"\n⚠️ 修正: 你刚才的出牌有误 - {error_msg}")
+        
+        lines.append("\n基于以上策略指南，请回答你要出的牌 (或回答 PASS):")
+        
+        return "\n".join(lines)
+    
+    def _select_relevant_guide(self, player: Player, game_state: GameState) -> str:
+        """Select most relevant guide sections based on current situation"""
+        selected = [self.guide_sections["general"]]
+        
+        # Add role-specific advice
+        if player.is_landlord and self.guide_sections["landlord"]:
+            selected.append("【地主策略】\n" + self.guide_sections["landlord"][:400])
+        elif not player.is_landlord and self.guide_sections["farmer"]:
+            selected.append("【农民策略】\n" + self.guide_sections["farmer"][:400])
+        
+        # Add endgame advice if low on cards
+        if len(player.cards) <= 5 and self.guide_sections["endgame"]:
+            selected.append("【残局策略】\n" + self.guide_sections["endgame"][:400])
+        
+        # Add bomb advice if have bombs
+        from collections import Counter
+        values = Counter([c.value for c in player.cards])
+        has_bomb = any(c >= 4 for c in values.values())
+        if has_bomb and self.guide_sections["bomb"]:
+            selected.append("【炸弹策略】\n" + self.guide_sections["bomb"][:300])
+        
+        return "\n\n".join(selected)
+    
+    def parse_response(self, response: str) -> Tuple[bool, str, List[str]]:
+        """Parse response same as NormalAgent"""
+        return NormalAgent("").parse_response(response)
+
+
 class CoTAgent(BaseAgent):
     """
     Chain-of-Thought Agent.
@@ -525,15 +637,18 @@ def create_agent(agent_type: str, name: str, **kwargs) -> BaseAgent:
     Factory function to create agents by type.
     
     Args:
-        agent_type: "normal", "cot", "tool", or "full"
+        agent_type: "normal", "guide", "cot", "tool", or "full"
         name: Agent name
         **kwargs: Additional configuration
+            - For "guide": requires guide_content (str)
+            - For "full": optional guide_content (str)
     
     Returns:
         BaseAgent instance
     """
     agent_map = {
         "normal": NormalAgent,
+        "guide": GuideAgent,
         "cot": CoTAgent,
         "tool": ToolAgent,
         "full": FullAgent,

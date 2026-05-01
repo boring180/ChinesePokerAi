@@ -41,12 +41,12 @@ def _get_client():
         api_key = _load_api_key()
         _client = OpenAI(
             api_key=api_key,
-            base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
     return _client
 
 
-def get_llm_reaction(history: List[Dict], prompt: str, model: str = "qwen-plus", 
+def get_llm_reaction(history: List[Dict], prompt: str, model: str = "qwen3.6-plus", 
                      temperature: float = 0.7, max_retries: int = 3) -> str:
     """
     Get LLM response for game interaction.
@@ -64,6 +64,7 @@ def get_llm_reaction(history: List[Dict], prompt: str, model: str = "qwen-plus",
     Raises:
         Exception: If all retries fail
     """
+    print(f"Getting LLM reaction for model: {model}")
     client = _get_client()
     
     # Build messages
@@ -76,6 +77,7 @@ def get_llm_reaction(history: List[Dict], prompt: str, model: str = "qwen-plus",
             completion = client.chat.completions.create(
                 model=model,
                 messages=messages,
+                extra_body={"enable_thinking": False},
                 temperature=temperature,
             )
             return completion.choices[0].message.content
@@ -114,4 +116,4 @@ if __name__ == "__main__":
     else:
         print("\n✗ Please check your API key and network connection.")
         print("  1. Verify API_key.json contains a valid key")
-        print("  2. Check network connectivity to dashscope-intl.aliyuncs.com")
+        print("  2. Check network connectivity to dashscope.aliyuncs.com")

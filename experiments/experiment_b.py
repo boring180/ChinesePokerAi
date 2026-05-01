@@ -15,7 +15,7 @@ def run_experiment_b(advanced_type: str = "cot", num_games: int = 30):
     Run Experiment B comparing turn counts.
     
     Args:
-        advanced_type: "cot", "tool", or "full"
+        advanced_type: "guide", "cot", "tool", or "full"
         num_games: Number of games per group (default 30)
     """
     print("=" * 60)
@@ -35,6 +35,8 @@ def run_experiment_b(advanced_type: str = "cot", num_games: int = 30):
     
     # Advanced agent factory
     def advanced_factory(name):
+        if advanced_type == "guide":
+            return GuideAgent(name, guide_content=guide, config=AgentConfig(use_guide=True))
         config = AgentConfig(use_cot=True, use_tools=True, use_guide=True)
         if advanced_type == "cot":
             return CoTAgent(name, config)
@@ -100,7 +102,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Run Experiment B")
     parser.add_argument("--advanced-type", type=str, default="cot",
-                       choices=["cot", "tool", "full"],
+                       choices=["guide", "cot", "tool", "full"],
                        help="Type of advanced agent")
     parser.add_argument("--num-games", type=int, default=30,
                        help="Number of games per group")
@@ -111,7 +113,7 @@ if __name__ == "__main__":
     
     if args.all:
         results = {}
-        for agent_type in ["cot", "tool", "full"]:
+        for agent_type in ["guide", "cot", "tool", "full"]:
             print(f"\n\n{'='*60}")
             print(f"Running with {agent_type.upper()} agents...")
             print(f"{'='*60}")

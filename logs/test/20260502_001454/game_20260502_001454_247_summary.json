@@ -1,0 +1,38 @@
+{
+  "game_id": "20260502_001454_247",
+  "winner": {
+    "name": "玩家二",
+    "role": "农民",
+    "index": 1
+  },
+  "statistics": {
+    "turn_count": 53,
+    "error_count": 21,
+    "error_rate": 0.39622641509433965
+  },
+  "final_state": {
+    "玩家一": 2,
+    "玩家二": 0,
+    "玩家三": 5
+  },
+  "players": [
+    {
+      "name": "玩家一",
+      "role": "landlord",
+      "agent_type": "NormalAgent",
+      "final_cards": 2
+    },
+    {
+      "name": "玩家二",
+      "role": "farmer",
+      "agent_type": "NormalAgent",
+      "final_cards": 0
+    },
+    {
+      "name": "玩家三",
+      "role": "farmer",
+      "agent_type": "NormalAgent",
+      "final_cards": 5
+    }
+  ]
+}

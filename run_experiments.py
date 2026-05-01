@@ -1,11 +1,12 @@
 """
 Main Experiment Runner for Chinese Poker AI Research
 Run all experiments or specific ones with configurable parameters.
+
+EASY EDITING: Just modify the CONFIG section in main() function below!
 """
 
 import sys
 import os
-import argparse
 from datetime import datetime
 
 # Ensure imports work
@@ -37,13 +38,16 @@ def run_single_game_test():
     ]
     
     print("Running single test game with 3 Normal agents...")
-    runner = GameRunner(agents, verbose=True)
+    print("Logs will be saved to: logs/test/")
+    runner = GameRunner(agents, verbose=True, enable_logging=True, 
+                       log_folder="logs", experiment_name="test")
     result = runner.run_game(random_landlord=True)
     
     print(f"\n✓ Test complete!")
     print(f"  Winner: {result.winner_name} ({result.winner_role})")
     print(f"  Turns: {result.turn_count}")
     print(f"  Errors: {result.error_count}")
+    print(f"  Logs saved to: {runner.log_folder}")
 
 
 def run_experiment_a_all(num_games: int = 30):
@@ -51,7 +55,7 @@ def run_experiment_a_all(num_games: int = 30):
     print_header("EXPERIMENT A: Win Rate Comparison (1 Advanced vs 2 Normal)")
     
     results = {}
-    for agent_type in ["cot", "tool", "full"]:
+    for agent_type in ["guide", "cot", "tool", "full"]:
         print(f"\n{'='*70}")
         print(f" Testing {agent_type.upper()} Agent")
         print(f"{'='*70}")
@@ -74,12 +78,19 @@ def run_experiment_a_all(num_games: int = 30):
     return results
 
 
+def run_experiment_a_single(agent_type: str = "cot", num_games: int = 30):
+    """Run Experiment A with a single agent type"""
+    print_header(f"EXPERIMENT A: 1 {agent_type.upper()} Agent vs 2 Normal Agents")
+    result = run_experiment_a(agent_type, num_games)
+    return {agent_type: result}
+
+
 def run_experiment_b_all(num_games: int = 30):
     """Run Experiment B with all agent types"""
     print_header("EXPERIMENT B: Turn Count Comparison (3 Advanced vs 3 Normal)")
     
     results = {}
-    for agent_type in ["cot", "tool", "full"]:
+    for agent_type in ["guide", "cot", "tool", "full"]:
         print(f"\n{'='*70}")
         print(f" Testing {agent_type.upper()} Agents")
         print(f"{'='*70}")
@@ -108,6 +119,13 @@ def run_experiment_b_all(num_games: int = 30):
               f"{improvement:>+14.1f}% {cohens_d:<12.2f}")
     
     return results
+
+
+def run_experiment_b_single(agent_type: str = "cot", num_games: int = 30):
+    """Run Experiment B with a single agent type"""
+    print_header(f"EXPERIMENT B: 3 {agent_type.upper()} Agents vs 3 Normal Agents")
+    adv_result, norm_result = run_experiment_b(agent_type, num_games)
+    return {agent_type: (adv_result, norm_result)}
 
 
 def run_all_experiments(num_games_a: int = 30, num_games_b: int = 30):
@@ -167,73 +185,67 @@ def run_all_experiments(num_games_a: int = 30, num_games_b: int = 30):
 
 
 def main():
-    """Main entry point"""
-    parser = argparse.ArgumentParser(
-        description="Run Chinese Poker AI experiments",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Run all experiments (full research suite)
-  python run_experiments.py --all --num-games 30
-  
-  # Quick test (single game)
-  python run_experiments.py --test
-  
-  # Experiment A only (1 advanced vs 2 normal)
-  python run_experiments.py --exp-a --agent-type cot --num-games 20
-  
-  # Experiment B only (turn count comparison)
-  python run_experiments.py --exp-b --advanced-type full --num-games 20
-  
-  # Run Experiment A with all agent types
-  python run_experiments.py --exp-a --all-types --num-games 30
-        """
-    )
+    """
+    MAIN CONFIGURATION - EDIT HERE!
+    ================================
     
-    parser.add_argument("--all", action="store_true",
-                       help="Run complete experiment suite (A + B, all agent types)")
-    parser.add_argument("--test", action="store_true",
-                       help="Run single test game to verify setup")
-    parser.add_argument("--exp-a", action="store_true",
-                       help="Run Experiment A only")
-    parser.add_argument("--exp-b", action="store_true",
-                       help="Run Experiment B only")
-    parser.add_argument("--agent-type", type=str, default="cot",
-                       choices=["cot", "tool", "full"],
-                       help="Agent type for Experiment A")
-    parser.add_argument("--advanced-type", type=str, default="cot",
-                       choices=["cot", "tool", "full"],
-                       help="Agent type for Experiment B advanced group")
-    parser.add_argument("--all-types", action="store_true",
-                       help="Run with all agent types (cot, tool, full)")
-    parser.add_argument("--num-games", type=int, default=30,
-                       help="Number of games to run (default: 30)")
+    Just modify the variables below to change what runs.
+    No command line arguments needed!
+    """
     
-    args = parser.parse_args()
+    # ============================================================
+    # CONFIG - EDIT THESE VALUES
+    # ============================================================
     
-    # Default to --all if no arguments
-    if not any([args.all, args.test, args.exp_a, args.exp_b]):
-        print("No experiment specified. Use --all to run complete suite, or --help for options.")
-        print("Running quick test by default...")
-        args.test = True
+    # What to run? (set only ONE to True)
+    RUN_TEST = True              # Quick single game test
+    RUN_ALL_EXPERIMENTS = False  # Full suite: Experiment A + B with all agent types
+    RUN_EXPERIMENT_A_ALL = False # Experiment A with all agent types
+    RUN_EXPERIMENT_B_ALL = False # Experiment B with all agent types
     
-    if args.test:
+    # Single experiment settings (used if RUN_ALL_* is False but RUN_TEST is False)
+    RUN_EXPERIMENT_A = False     # Run only Experiment A
+    AGENT_TYPE_A = "cot"         # Agent for Exp A: "guide", "cot", "tool", "full"
+    NUM_GAMES_A = 30             # Number of games for Exp A
+    
+    RUN_EXPERIMENT_B = False     # Run only Experiment B
+    AGENT_TYPE_B = "cot"         # Agent for Exp B: "guide", "cot", "tool", "full"
+    NUM_GAMES_B = 30             # Number of games per group for Exp B
+    
+    # ============================================================
+    # END CONFIG - DON'T EDIT BELOW UNLESS YOU KNOW WHAT YOU'RE DOING
+    # ============================================================
+    
+    print_header("CHINESE POKER AI - EXPERIMENT RUNNER")
+    print(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Working directory: {os.getcwd()}")
+    
+    # Determine what to run
+    if RUN_TEST:
         run_single_game_test()
     
-    elif args.all:
-        run_all_experiments(args.num_games, args.num_games)
+    elif RUN_ALL_EXPERIMENTS:
+        run_all_experiments(NUM_GAMES_A, NUM_GAMES_B)
     
-    elif args.exp_a:
-        if args.all_types:
-            run_experiment_a_all(args.num_games)
-        else:
-            run_experiment_a(args.agent_type, args.num_games)
+    elif RUN_EXPERIMENT_A_ALL:
+        run_experiment_a_all(NUM_GAMES_A)
     
-    elif args.exp_b:
-        if args.all_types:
-            run_experiment_b_all(args.num_games)
-        else:
-            run_experiment_b(args.advanced_type, args.num_games)
+    elif RUN_EXPERIMENT_B_ALL:
+        run_experiment_b_all(NUM_GAMES_B)
+    
+    elif RUN_EXPERIMENT_A:
+        run_experiment_a_single(AGENT_TYPE_A, NUM_GAMES_A)
+    
+    elif RUN_EXPERIMENT_B:
+        run_experiment_b_single(AGENT_TYPE_B, NUM_GAMES_B)
+    
+    else:
+        print("\n⚠️  Nothing configured to run!")
+        print("Please set one of the RUN_* variables to True in the main() function.")
+        print("\nFor example, change:")
+        print("  RUN_TEST = False")
+        print("to:")
+        print("  RUN_TEST = True")
 
 
 if __name__ == "__main__":

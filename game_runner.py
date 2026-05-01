@@ -43,7 +43,8 @@ class GameRunner:
     """
     
     def __init__(self, agents: List[BaseAgent], verbose: bool = True, 
-                 max_retries: int = 3, enable_logging: bool = False):
+                 max_retries: int = 3, enable_logging: bool = False,
+                 log_folder: str = "logs", experiment_name: str = None):
         """
         Initialize game runner.
         
@@ -52,6 +53,8 @@ class GameRunner:
             verbose: Whether to print game progress
             max_retries: Max retries for invalid plays
             enable_logging: Whether to log game to file
+            log_folder: Folder to save logs (default: "logs")
+            experiment_name: Name of experiment for subfolder
         """
         if len(agents) != 3:
             raise ValueError("Exactly 3 agents required")
@@ -61,6 +64,24 @@ class GameRunner:
         self.max_retries = max_retries
         self.enable_logging = enable_logging
         self.log_file = None
+        self.log_folder = log_folder
+        
+        # Create log folder structure
+        if self.enable_logging:
+            # Create main logs folder
+            if not os.path.exists(log_folder):
+                os.makedirs(log_folder)
+            
+            # Create experiment subfolder if specified
+            if experiment_name:
+                self.log_folder = os.path.join(log_folder, experiment_name)
+                if not os.path.exists(self.log_folder):
+                    os.makedirs(self.log_folder)
+            
+            # Create timestamped subfolder for this run
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.log_folder = os.path.join(self.log_folder, timestamp)
+            os.makedirs(self.log_folder)
         
         # Initialize players
         self.players = [
@@ -81,6 +102,57 @@ class GameRunner:
         if self.verbose:
             print(message)
     
+    def _save_detailed_history(self, game_id: str):
+        """Save detailed player histories to separate files"""
+        if not self.enable_logging:
+            return
+        
+        for i, player in enumerate(self.players):
+            history_file = os.path.join(self.log_folder, f"game_{game_id}_player{i+1}_{player.name}.json")
+            with open(history_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "player_name": player.name,
+                    "role": "landlord" if player.is_landlord else "farmer",
+                    "final_card_count": len(player.cards),
+                    "conversation_history": player.history
+                }, f, ensure_ascii=False, indent=2)
+    
+    def _save_summary(self, result: GameResult, game_id: str):
+        """Save game summary to JSON file"""
+        if not self.enable_logging:
+            return
+        
+        summary_data = {
+            "game_id": game_id,
+            "winner": {
+                "name": result.winner_name,
+                "role": result.winner_role,
+                "index": result.winner_idx
+            },
+            "statistics": {
+                "turn_count": result.turn_count,
+                "error_count": result.error_count,
+                "error_rate": result.error_count / max(1, result.turn_count)
+            },
+            "final_state": {
+                player_name: card_count 
+                for player_name, card_count in result.players_final_cards.items()
+            },
+            "players": [
+                {
+                    "name": player.name,
+                    "role": "landlord" if player.is_landlord else "farmer",
+                    "agent_type": self.agents[i].__class__.__name__,
+                    "final_cards": len(player.cards)
+                }
+                for i, player in enumerate(self.players)
+            ]
+        }
+        
+        summary_file = os.path.join(self.log_folder, f"game_{game_id}_summary.json")
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            json.dump(summary_data, f, ensure_ascii=False, indent=2)
+    
     def run_game(self, random_landlord: bool = True, 
                  landlord_idx: int = 0) -> GameResult:
         """
@@ -93,14 +165,18 @@ class GameRunner:
         Returns:
             GameResult with game statistics
         """
-        # Setup logging
+        # Setup logging with unique game ID
+        game_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
         if self.enable_logging:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.log_file = f"game_log_{timestamp}.txt"
+            self.log_file = os.path.join(self.log_folder, f"game_{game_id}.txt")
+            # Also create a summary file
+            self.summary_file = os.path.join(self.log_folder, f"game_{game_id}_summary.json")
         
         self._log("=" * 50)
         self._log("开始新游戏")
         self._log("=" * 50)
+        self._log(f"Game ID: {game_id}")
+        self._log(f"Log folder: {self.log_folder if self.enable_logging else 'N/A'}")
         
         # Reset players
         for p in self.players:
@@ -154,22 +230,22 @@ class GameRunner:
             else:
                 self._log(f"\n【回合{turn_count}】轮到 {player.name}")
             
-            # Get agent's play
-            success, result = self._get_agent_play(
+            # Get agent's play (returns success, result, errors_this_turn)
+            success, result, turn_errors = self._get_agent_play(
                 agent, player, game_state, card_tracker
             )
+            
+            # Accumulate errors from this turn (including retries)
+            error_count += turn_errors
             
             if not success:
                 # Fatal error (shouldn't happen with proper retries)
                 self._log(f"错误: {result}")
-                error_count += 1
-                # Force pass
+                # Force pass - record_play handles pass counting
                 game_state.record_play(player.name, Series(), is_pass=True)
-                game_state.pass_turn()
             elif result == "PASS":
-                # Player passed
+                # Player passed - record_play handles pass counting
                 game_state.record_play(player.name, Series(), is_pass=True)
-                game_state.pass_turn()
                 self._log(f"{player.name} 选择: PASS (不要)")
             else:
                 # Valid play
@@ -180,7 +256,7 @@ class GameRunner:
                 player.play_cards(cards_played)
                 
                 # Update game state
-                game_state.play(player.name, series)
+                game_state.record_play(player.name, series, is_pass=False)
                 card_tracker.record_play(player.name, cards_played)
                 
                 self._log(f"{player.name} 出牌: {series}")
@@ -201,7 +277,8 @@ class GameRunner:
                 # Final card counts
                 final_cards = {p.name: len(p.cards) for p in self.players}
                 
-                return GameResult(
+                # Create result
+                result = GameResult(
                     winner_idx=winner_idx,
                     winner_name=winner.name,
                     winner_role=winner_role,
@@ -210,6 +287,13 @@ class GameRunner:
                     players_final_cards=final_cards,
                     play_history=[h for p in self.players for h in p.history]
                 )
+                
+                # Save detailed logs if enabled
+                if self.enable_logging:
+                    self._save_detailed_history(game_id)
+                    self._save_summary(result, game_id)
+                
+                return result
             
             # Next player
             current_idx = (current_idx + 1) % 3
@@ -217,12 +301,12 @@ class GameRunner:
     
     def _get_agent_play(self, agent: BaseAgent, player: Player,
                         game_state: GameState, card_tracker: CardTracker,
-                        retry_count: int = 0) -> Tuple[bool, any]:
+                        retry_count: int = 0, accumulated_errors: int = 0) -> Tuple[bool, any, int]:
         """
         Get play from agent with retry logic.
         
         Returns:
-            (success, result) where result is either "PASS" or List[Card]
+            (success, result, error_count) where result is either "PASS" or List[Card]
         """
         # Build prompt
         if isinstance(agent, (ToolAgent, FullAgent)):
@@ -234,11 +318,13 @@ class GameRunner:
         try:
             response = API.get_llm_reaction(agent.history, prompt)
         except Exception as e:
+            # Count API error
+            accumulated_errors += 1
             if retry_count < self.max_retries:
                 return self._get_agent_play(
-                    agent, player, game_state, card_tracker, retry_count + 1
+                    agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                 )
-            return False, f"LLM API error: {str(e)}"
+            return False, f"LLM API error: {str(e)}", accumulated_errors
         
         # Parse response
         if isinstance(agent, (ToolAgent, FullAgent)):
@@ -264,11 +350,13 @@ class GameRunner:
                         is_pass = False
                     cards = cards_or_tool
                 except Exception as e:
+                    # Count tool execution error
+                    accumulated_errors += 1
                     if retry_count < self.max_retries:
                         return self._get_agent_play(
-                            agent, player, game_state, card_tracker, retry_count + 1
+                            agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                         )
-                    return False, str(e)
+                    return False, str(e), accumulated_errors
             else:
                 cards = cards_or_tool
         else:
@@ -283,65 +371,74 @@ class GameRunner:
         if is_pass:
             # Check if PASS is valid (not first player or after clear)
             if game_state.table_series.type == CardType.INVALID:
-                # Can't pass as first player
+                # Can't pass as first player - count as error
+                accumulated_errors += 1
                 error_msg = "你是首家，不能PASS，必须出牌"
                 if retry_count < self.max_retries:
                     return self._get_agent_play_with_error(
-                        agent, player, game_state, card_tracker, error_msg, retry_count
+                        agent, player, game_state, card_tracker, error_msg, retry_count, accumulated_errors
                     )
                 # Force minimum play
                 if player.cards:
-                    return True, [player.cards[0]]
-                return False, "No cards to play"
-            return True, "PASS"
+                    return True, [player.cards[0]], accumulated_errors
+                return False, "No cards to play", accumulated_errors
+            return True, "PASS", accumulated_errors
         
         # Validate card selection
         if not cards:
+            # Count as error
+            accumulated_errors += 1
             error_msg = "未能识别出牌"
             if retry_count < self.max_retries:
                 return self._get_agent_play_with_error(
-                    agent, player, game_state, card_tracker, error_msg, retry_count
+                    agent, player, game_state, card_tracker, error_msg, retry_count, accumulated_errors
                 )
-            return False, "Invalid card selection"
+            return False, "Invalid card selection", accumulated_errors
         
         # Check if player has these cards
         selected_cards = player.has_cards(cards)
         if not selected_cards or len(selected_cards) != len(cards):
+            # Count as error
+            accumulated_errors += 1
             error_msg = f"手牌中没有这些牌: {cards}"
             if retry_count < self.max_retries:
                 return self._get_agent_play_with_error(
-                    agent, player, game_state, card_tracker, error_msg, retry_count
+                    agent, player, game_state, card_tracker, error_msg, retry_count, accumulated_errors
                 )
-            return False, error_msg
+            return False, error_msg, accumulated_errors
         
         # Validate series
         series = validate_series(selected_cards)
         if series.type == CardType.INVALID:
+            # Count as error
+            accumulated_errors += 1
             error_msg = f"牌型无效: {cards}"
             if retry_count < self.max_retries:
                 return self._get_agent_play_with_error(
-                    agent, player, game_state, card_tracker, error_msg, retry_count
+                    agent, player, game_state, card_tracker, error_msg, retry_count, accumulated_errors
                 )
-            return False, error_msg
+            return False, error_msg, accumulated_errors
         
         # Check if can beat table
         if game_state.table_series.type != CardType.INVALID:
             can_beat, reason = series.can_beat(game_state.table_series)
             if not can_beat:
+                # Count as error
+                accumulated_errors += 1
                 error_msg = f"无法压过桌上的牌: {reason}"
                 if retry_count < self.max_retries:
                     return self._get_agent_play_with_error(
-                        agent, player, game_state, card_tracker, error_msg, retry_count
+                        agent, player, game_state, card_tracker, error_msg, retry_count, accumulated_errors
                     )
-                return False, error_msg
+                return False, error_msg, accumulated_errors
         
-        # Valid play
-        return True, selected_cards
+        # Valid play - return accumulated errors (may be 0 if first try succeeded)
+        return True, selected_cards, accumulated_errors
     
     def _get_agent_play_with_error(self, agent: BaseAgent, player: Player,
                                     game_state: GameState, card_tracker: CardTracker,
-                                    error_msg: str, retry_count: int) -> Tuple[bool, any]:
-        """Retry play with error message"""
+                                    error_msg: str, retry_count: int, accumulated_errors: int = 0) -> Tuple[bool, any, int]:
+        """Retry play with error message - counts each retry as an error"""
         # Build error prompt
         if isinstance(agent, (ToolAgent, FullAgent)):
             prompt = agent.build_prompt(player, game_state, card_tracker, 
@@ -353,11 +450,13 @@ class GameRunner:
         try:
             response = API.get_llm_reaction(agent.history, prompt)
         except Exception as e:
+            # Count API error
+            accumulated_errors += 1
             if retry_count + 1 < self.max_retries:
                 return self._get_agent_play(
-                    agent, player, game_state, card_tracker, retry_count + 1
+                    agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                 )
-            return False, str(e)
+            return False, str(e), accumulated_errors
         
         # Update history
         agent.add_to_history("user", prompt)
@@ -379,7 +478,8 @@ class GameRunner:
                     response = follow_up_response
                     is_pass, _, cards, _ = agent.parse_response(response)
                 except Exception as e:
-                    return False, str(e)
+                    accumulated_errors += 1
+                    return False, str(e), accumulated_errors
             else:
                 cards = cards_or_tool
         else:
@@ -387,48 +487,53 @@ class GameRunner:
         
         if is_pass:
             if game_state.table_series.type == CardType.INVALID:
+                accumulated_errors += 1
                 if retry_count + 1 < self.max_retries:
                     return self._get_agent_play(
-                        agent, player, game_state, card_tracker, retry_count + 1
+                        agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                     )
                 if player.cards:
-                    return True, [player.cards[0]]
-                return False, "No cards"
-            return True, "PASS"
+                    return True, [player.cards[0]], accumulated_errors
+                return False, "No cards", accumulated_errors
+            return True, "PASS", accumulated_errors
         
         if not cards:
+            accumulated_errors += 1
             if retry_count + 1 < self.max_retries:
                 return self._get_agent_play(
-                    agent, player, game_state, card_tracker, retry_count + 1
+                    agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                 )
-            return False, "No cards parsed"
+            return False, "No cards parsed", accumulated_errors
         
         selected_cards = player.has_cards(cards)
         if not selected_cards:
+            accumulated_errors += 1
             if retry_count + 1 < self.max_retries:
                 return self._get_agent_play(
-                    agent, player, game_state, card_tracker, retry_count + 1
+                    agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                 )
-            return False, "Cards not in hand"
+            return False, "Cards not in hand", accumulated_errors
         
         series = validate_series(selected_cards)
         if series.type == CardType.INVALID:
+            accumulated_errors += 1
             if retry_count + 1 < self.max_retries:
                 return self._get_agent_play(
-                    agent, player, game_state, card_tracker, retry_count + 1
+                    agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                 )
-            return False, "Invalid series"
+            return False, "Invalid series", accumulated_errors
         
         if game_state.table_series.type != CardType.INVALID:
             can_beat, _ = series.can_beat(game_state.table_series)
             if not can_beat:
+                accumulated_errors += 1
                 if retry_count + 1 < self.max_retries:
                     return self._get_agent_play(
-                        agent, player, game_state, card_tracker, retry_count + 1
+                        agent, player, game_state, card_tracker, retry_count + 1, accumulated_errors
                     )
-                return False, "Cannot beat table"
+                return False, "Cannot beat table", accumulated_errors
         
-        return True, selected_cards
+        return True, selected_cards, accumulated_errors
     
     def _format_game_start(self) -> str:
         """Format game start message"""

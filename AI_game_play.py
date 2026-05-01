@@ -82,7 +82,7 @@ def main():
     parser.add_argument("--quick-test", action="store_true",
                        help="Quick test (1 game, no output)")
     parser.add_argument("--agent-type", type=str, default="cot",
-                       choices=["normal", "cot", "tool", "full"],
+                       choices=["normal", "guide", "cot", "tool", "full"],
                        help="Agent type for experiments")
     parser.add_argument("--num-games", type=int, default=30,
                        help="Number of games to run")

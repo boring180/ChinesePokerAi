@@ -162,13 +162,20 @@ class ExperimentResult:
 class Evaluator:
     """Main evaluation class for running experiments"""
     
-    def __init__(self, output_dir: str = "results"):
+    def __init__(self, output_dir: str = "results", log_games: bool = True):
         self.output_dir = output_dir
+        self.log_games = log_games
         os.makedirs(output_dir, exist_ok=True)
+        
+        # Create logs directory for game logs
+        if self.log_games:
+            self.logs_dir = os.path.join(output_dir, "game_logs")
+            os.makedirs(self.logs_dir, exist_ok=True)
+        
         self.experiments: List[ExperimentResult] = []
     
     def evaluate_experiment_a(self, advanced_agent, normal_agent_factory, 
-                            num_games: int = 30) -> ExperimentResult:
+                            num_games: int = 30, enable_logging: bool = None) -> ExperimentResult:
         """
         Experiment A: 1 advanced agent vs 2 normal agents
         
@@ -182,19 +189,26 @@ class Evaluator:
             advanced_agent: The advanced agent instance
             normal_agent_factory: Factory function that returns normal agents
             num_games: Number of games to run
+            enable_logging: Whether to save game logs (default: True for first 5 games)
         
         Returns:
             ExperimentResult
         """
-        from game_runner import run_multiple_games
+        from game_runner import GameRunner
         from ai_agent import BaseAgent
         
         exp_name = f"Experiment_A_{advanced_agent.__class__.__name__}_vs_Normal"
         result = ExperimentResult(exp_name, num_games)
         
+        # Default: log first 5 games for inspection
+        if enable_logging is None:
+            enable_logging = self.log_games
+        
         print(f"\nRunning {exp_name}...")
         print(f"Configuration: 1 {advanced_agent.__class__.__name__} vs 2 Normal agents")
         print(f"Running {num_games} games...")
+        if enable_logging:
+            print(f"Game logs will be saved to: {self.logs_dir}/{exp_name}/")
         
         # Run games with landlord rotation
         for i in range(num_games):
@@ -209,8 +223,15 @@ class Evaluator:
             landlord_idx = i % 3
             
             # Run game
-            from game_runner import GameRunner
-            runner = GameRunner(agents, verbose=False)
+            # Enable logging for first 5 games only to avoid too many files
+            game_logging = enable_logging and i < 5
+            runner = GameRunner(
+                agents, 
+                verbose=False, 
+                enable_logging=game_logging,
+                log_folder=self.logs_dir if game_logging else "logs",
+                experiment_name=exp_name if game_logging else None
+            )
             game_result = runner.run_game(random_landlord=False, landlord_idx=landlord_idx)
             
             # Record result
@@ -249,6 +270,8 @@ class Evaluator:
         print(f"\nRunning Experiment B...")
         print(f"Comparing turn counts: 3 Advanced agents vs 3 Normal agents")
         print(f"Running {num_games} games per group...")
+        if self.log_games:
+            print(f"Game logs will be saved to: {self.logs_dir}/")
         
         # Run advanced group
         exp_name_advanced = "Experiment_B_3_Advanced"
@@ -261,8 +284,15 @@ class Evaluator:
                 advanced_agent_factory("玩家三"),
             ]
             
-            from game_runner import GameRunner
-            runner = GameRunner(agents, verbose=False)
+            # Enable logging for first 3 games
+            game_logging = self.log_games and i < 3
+            runner = GameRunner(
+                agents, 
+                verbose=False, 
+                enable_logging=game_logging,
+                log_folder=self.logs_dir if game_logging else "logs",
+                experiment_name=exp_name_advanced if game_logging else None
+            )
             game_result = runner.run_game(random_landlord=True)
             
             agent_configs = [
@@ -286,8 +316,15 @@ class Evaluator:
                 normal_agent_factory("玩家三"),
             ]
             
-            from game_runner import GameRunner
-            runner = GameRunner(agents, verbose=False)
+            # Enable logging for first 3 games
+            game_logging = self.log_games and i < 3
+            runner = GameRunner(
+                agents, 
+                verbose=False, 
+                enable_logging=game_logging,
+                log_folder=self.logs_dir if game_logging else "logs",
+                experiment_name=exp_name_normal if game_logging else None
+            )
             game_result = runner.run_game(random_landlord=True)
             
             agent_configs = [
