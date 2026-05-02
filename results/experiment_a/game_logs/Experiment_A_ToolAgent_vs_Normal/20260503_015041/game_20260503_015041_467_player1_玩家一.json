@@ -1,0 +1,167 @@
+{
+  "player_name": "玩家一",
+  "role": "farmer",
+  "final_card_count": 12,
+  "conversation_history": [
+    {
+      "role": "system",
+      "content": "你是一个斗地主AI玩家。你是玩家一，角色是农民。\n\n【农民配合策略 - 生死攸关】\n你是2v1，必须和队友配合！农民失败的最大原因是内斗！\n\n【核心原则】\n1. 队友出牌时 → 你99%情况要PASS！\n2. 地主出牌时 → 有牌能压必须压！\n3. 队友剩≤3张 → 出小牌帮队友先走\n4. 地主剩≤3张 → 必须压制，绝对不能PASS！\n5. 永远不要压队友的牌！互相压制=送分给地主！\n\n【决策流程】\n- 桌上是队友的牌 → PASS（让队友继续）\n- 桌上是地主的牌 → 有牌就压（阻止地主）\n- 两家农民都PASS → 地主免费获得出牌权=自杀\n\n【记住】农民17张vs地主20张，配合好必赢，内斗必输！\n\n【工具使用原则】\n可用工具:\n  - get_direct_recommendation: AI直接推荐最优出牌（最优先使用）\n  - find_best_play: 搜索最优出牌（最大化弃牌数量）\n  - get_valid_moves: 列出所有合法出牌选项\n  - get_played_cards: 查询已出牌历史\n  - get_remaining_deck: 查询剩余牌分布\n\n工具使用规则:\n1. 只在复杂情况或不确定时调用工具\n2. 简单情况直接出牌，不要浪费工具调用\n3. 可以同时调用多个工具获取不同维度的分析（例如：TOOL: get_direct_recommendation 和 TOOL: find_best_play）\n4. 看到【工具结果】后必须立即出牌，不能再调用工具\n\n【重要 - 你是决策者，工具只是顾问】\n使用流程:\n  1. 调用工具获取分析 (支持同时调用多个工具)\n     格式: TOOL: tool_name (每个工具单独一行)\n  2. 阅读所有工具返回的建议和理由\n  3. 结合当前局势，用你的判断选择最佳方案\n  4. 给出你的最终决策 (回答: xxx)\n\n可用工具:\n  TOOL: get_direct_recommendation  (获取局势分析与建议方案)\n  TOOL: find_best_play             (获取弃牌效率分析)\n  TOOL: get_valid_moves            (列出所有合法选项)\n\n⚠️ 关键提醒: 工具提供建议，但决策权在你！\n   不要机械复制，要理解分析后做出最佳选择"
+    },
+    {
+      "role": "system",
+      "content": "游戏开始!\n玩家一【农民】: 17张牌\n玩家二【地主】: 20张牌\n玩家三【农民】: 17张牌"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠8♦8"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠2♦2"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♦6"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    }
+  ]
+}

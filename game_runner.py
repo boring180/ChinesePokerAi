@@ -474,25 +474,39 @@ class GameRunner:
         player.add_history({"role": "assistant", "content": response})
         
         # Handle tool calling (only in phase "initial")
+        # Support multiple parallel tool calls
         if is_tool_agent and phase == "initial" and tool_call:
-            # Track the tool call
-            self._track_tool_call(tool_call.tool_name)
-
-            # Execute the tool
-            try:
-                tool_result_str = self._execute_tool_for_agent(
-                    tool_call.tool_name, player, game_state, card_tracker
-                )
-            except Exception as e:
-                tool_result_str = f"[工具执行错误: {str(e)}]"
-
+            # Execute all requested tools in parallel
+            tool_results = []
+            executed_tools = []
+            
+            for tool_name in tool_call.tool_names:
+                # Track each tool call
+                self._track_tool_call(tool_name)
+                executed_tools.append(tool_name)
+                
+                # Execute the tool
+                try:
+                    result = self._execute_tool_for_agent(
+                        tool_name, player, game_state, card_tracker
+                    )
+                    tool_results.append(f"【{tool_name}】\n{result}")
+                except Exception as e:
+                    tool_results.append(f"【{tool_name}】\n[工具执行错误: {str(e)}]")
+            
+            # Combine all tool results
+            combined_result = "\n\n".join(tool_results)
+            
             # Log the tool interaction
             self._log_llm_interaction(
                 player.name, prompt, response,
-                tool_call=tool_call, tool_result=tool_result_str
+                tool_call=tool_call, tool_result=combined_result
             )
-
-            self._log(f"{player.name} 调用工具: {tool_call.tool_name}")
+            
+            if len(executed_tools) == 1:
+                self._log(f"{player.name} 调用工具: {executed_tools[0]}")
+            else:
+                self._log(f"{player.name} 调用多个工具: {', '.join(executed_tools)}")
             
             # Transition to phase "after_tool" - agent must now play cards
             return self._get_agent_play_with_tools(
@@ -500,7 +514,7 @@ class GameRunner:
                 retry_count=0,  # Reset retries for the actual decision
                 accumulated_errors=accumulated_errors,
                 phase="after_tool",
-                tool_result=tool_result_str,
+                tool_result=combined_result,
                 error_msg=error_msg
             )
         

@@ -1,0 +1,95 @@
+{
+  "player_name": "玩家一",
+  "role": "landlord",
+  "final_card_count": 0,
+  "conversation_history": [
+    {
+      "role": "system",
+      "content": "你是一个斗地主AI玩家。你是玩家一，角色是地主。\n\n【地主核心策略 - 必须遵守】\n你是1v2，必须主动进攻:\n1. 首家出牌时 → 优先出顺子、连对，快速减少手牌数量\n2. 农民压过你时 → 能压回来就压，保持出牌权\n3. 农民剩牌≤3张时 → 必须压制，有炸弹用炸弹\n4. 永远不要浪费炸弹！炸弹是最后手段\n5. 保留至少一个大牌(2或王)用于最后时刻\n6. 你只有20张牌vs农民17张，要主动控制节奏\n\n【关键原则】\n- 能出多牌时绝不出单牌\n- 能用普通牌压过就不用炸弹\n- 失去控制时尽快夺回\n\n【工具使用原则】\n可用工具:\n  - get_direct_recommendation: AI直接推荐最优出牌（最优先使用）\n  - find_best_play: 搜索最优出牌（最大化弃牌数量）\n  - get_valid_moves: 列出所有合法出牌选项\n  - get_played_cards: 查询已出牌历史\n  - get_remaining_deck: 查询剩余牌分布\n\n工具使用规则:\n1. 只在复杂情况或不确定时调用工具\n2. 简单情况直接出牌，不要浪费工具调用\n3. 可以同时调用多个工具获取不同维度的分析（例如：TOOL: get_direct_recommendation 和 TOOL: find_best_play）\n4. 看到【工具结果】后必须立即出牌，不能再调用工具\n\n【重要 - 你是决策者，工具只是顾问】\n使用流程:\n  1. 调用工具获取分析 (支持同时调用多个工具)\n     格式: TOOL: tool_name (每个工具单独一行)\n  2. 阅读所有工具返回的建议和理由\n  3. 结合当前局势，用你的判断选择最佳方案\n  4. 给出你的最终决策 (回答: xxx)\n\n可用工具:\n  TOOL: get_direct_recommendation  (获取局势分析与建议方案)\n  TOOL: find_best_play             (获取弃牌效率分析)\n  TOOL: get_valid_moves            (列出所有合法选项)\n\n⚠️ 关键提醒: 工具提供建议，但决策权在你！\n   不要机械复制，要理解分析后做出最佳选择"
+    },
+    {
+      "role": "system",
+      "content": "游戏开始!\n玩家一【地主】: 20张牌\n玩家二【农民】: 17张牌\n玩家三【农民】: 17张牌"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠3♥3♣3♦3"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠8♥8♦8"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♣5♦5"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠Q♥Q"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠2♥2"
+    },
+    {
+      "role": "assistant",
+      "content": "TOOL: get_direct_recommendation\nTOOL: find_best_play"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠9♦9"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠A♦A"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♠J"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: 小王"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: PASS"
+    },
+    {
+      "role": "assistant",
+      "content": "回答: ♥6"
+    }
+  ]
+}

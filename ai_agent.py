@@ -3,7 +3,7 @@ AI Agent Implementations for Chinese Poker
 True Tool-Calling Agent Design
 """
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 from dataclasses import dataclass
 import re
 
@@ -23,13 +23,23 @@ class AgentConfig:
 
 
 class ToolCall:
-    """Represents a tool call from the agent"""
-    def __init__(self, tool_name: str, tool_input: str = ""):
-        self.tool_name = tool_name.strip().lower().replace(" ", "_")
+    """Represents one or more tool calls from the agent"""
+    def __init__(self, tool_names: Union[str, List[str]], tool_input: str = ""):
+        if isinstance(tool_names, str):
+            self.tool_names = [tool_names.strip().lower().replace(" ", "_")]
+        else:
+            self.tool_names = [name.strip().lower().replace(" ", "_") for name in tool_names]
         self.tool_input = tool_input.strip()
     
+    @property
+    def tool_name(self) -> str:
+        """For backward compatibility - returns first tool name"""
+        return self.tool_names[0] if self.tool_names else ""
+    
     def __repr__(self):
-        return f"ToolCall({self.tool_name})"
+        if len(self.tool_names) == 1:
+            return f"ToolCall({self.tool_names[0]})"
+        return f"ToolCall({', '.join(self.tool_names)})"
 
 
 class BaseAgent:
@@ -421,13 +431,14 @@ class ToolAgent(BaseAgent):
 工具使用规则:
 1. 只在复杂情况或不确定时调用工具
 2. 简单情况直接出牌，不要浪费工具调用
-3. 每个回合只能调用一个工具
-4. 看到【工具结果】后必须立即出牌
+3. 可以同时调用多个工具获取不同维度的分析（例如：TOOL: get_direct_recommendation 和 TOOL: find_best_play）
+4. 看到【工具结果】后必须立即出牌，不能再调用工具
 
 【重要 - 你是决策者，工具只是顾问】
 使用流程:
-  1. 调用工具获取分析 (TOOL: xxx)
-  2. 阅读工具返回的建议和理由
+  1. 调用工具获取分析 (支持同时调用多个工具)
+     格式: TOOL: tool_name (每个工具单独一行)
+  2. 阅读所有工具返回的建议和理由
   3. 结合当前局势，用你的判断选择最佳方案
   4. 给出你的最终决策 (回答: xxx)
 
@@ -476,7 +487,7 @@ class ToolAgent(BaseAgent):
                 lines.append("")
 
             lines.extend([
-                "⚠️ 工具结果已提供，请直接给出最终出牌:",
+                "⚠️ 所有工具结果已提供，请直接给出最终出牌:",
                 f"你的手牌: {hand_str}",
                 f"当前局势: {self._format_table(game_state)}",
                 f"你的角色: {role}",
@@ -598,9 +609,14 @@ class ToolAgent(BaseAgent):
         lines.extend([
             "",
             "【何时使用工具】",
-            "✅ 分析: TOOL: get_direct_recommendation - 获取局势分析和建议",
-            "✅ 效率: TOOL: find_best_play - 分析哪种出法丢弃最多牌",
-            "✅ 选项: TOOL: get_valid_moves - 列出所有合法出牌选项",
+            "可以同时调用多个工具，每个工具单独一行:",
+            "✅ TOOL: get_direct_recommendation - 获取局势分析和建议",
+            "✅ TOOL: find_best_play - 分析哪种出法丢弃最多牌",
+            "✅ TOOL: get_valid_moves - 列出所有合法出牌选项",
+            "示例（同时调用多个）:",
+            "  TOOL: get_direct_recommendation",
+            "  TOOL: find_best_play",
+            "",
             "❌ 直接出牌: 手牌很少(≤3张) / 明显只能PASS / 明显只有一个选择",
             "",
         ])
@@ -650,22 +666,35 @@ class ToolAgent(BaseAgent):
     def parse_response(self, response: str) -> Tuple[bool, str, List[str], Optional[ToolCall]]:
         """
         Parse response to detect tool calls or card plays.
+        Supports multiple parallel tool calls.
         """
         original_response = response.strip()
         response_upper = original_response.upper()
         
-        # Check for TOOL call
-        tool_match = re.search(r'(?:TOOL[:：]|工具[:：]|调用[:：]|使用[:：])\s*(\S+)', original_response, re.IGNORECASE)
-        if tool_match:
-            tool_name = tool_match.group(1).strip().lower()
-            # Validate tool name
+        # Check for multiple TOOL calls (new feature: parallel tool calling)
+        tool_pattern = r'(?:TOOL[:：]|工具[:：]|调用[:：]|使用[:：])\s*(\S+)'
+        tool_matches = re.findall(tool_pattern, original_response, re.IGNORECASE)
+        
+        if tool_matches:
+            # Collect all valid tool names
+            valid_tools = []
             available_tools_lower = {k.lower(): k for k in self.AVAILABLE_TOOLS.keys()}
-            if tool_name in available_tools_lower:
-                return False, original_response, [], ToolCall(available_tools_lower[tool_name])
-            # Try fuzzy match
-            for avail_lower, avail_orig in available_tools_lower.items():
-                if avail_lower in tool_name or tool_name in avail_lower:
-                    return False, original_response, [], ToolCall(avail_orig)
+            
+            for tool_name in tool_matches:
+                tool_name = tool_name.strip().lower()
+                if tool_name in available_tools_lower:
+                    valid_tools.append(available_tools_lower[tool_name])
+                else:
+                    # Try fuzzy match
+                    for avail_lower, avail_orig in available_tools_lower.items():
+                        if avail_lower in tool_name or tool_name in avail_lower:
+                            valid_tools.append(avail_orig)
+                            break
+            
+            # Return unique tool calls (remove duplicates)
+            unique_tools = list(dict.fromkeys(valid_tools))  # Preserves order, removes duplicates
+            if unique_tools:
+                return False, original_response, [], ToolCall(unique_tools)
         
         # Check for PASS in answer section
         for marker in ['回答:', '回答：', 'answer:', '最终决定:', '出牌:', '出牌：']:
@@ -786,10 +815,10 @@ class FullAgent(BaseAgent):
                 f"你的手牌: {hand_str}",
                 f"当前局势: {self._format_table(game_state)}",
                 "",
-                "⚠️ 工具结果已提供。请分析后给出最终出牌:",
+                "⚠️ 所有工具结果已提供。综合分析后给出最终出牌:",
                 "",
                 "格式:",
-                "  观察: <对工具结果的分析>",
+                "  观察: <对所有工具结果的综合分析>",
                 "  思考: <你的决策理由>",
                 "  回答: ♠3♣3 或 PASS",
             ])
