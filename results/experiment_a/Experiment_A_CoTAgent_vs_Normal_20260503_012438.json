@@ -1,0 +1,40 @@
+{
+  "experiment_name": "Experiment_A_CoTAgent_vs_Normal",
+  "num_games": 30,
+  "agent_stats": {
+    "玩家一": {
+      "agent_name": "玩家一",
+      "agent_type": "advanced",
+      "games_played": 30,
+      "games_won": 24,
+      "win_rate": "80.00%",
+      "avg_turn_count": "48.7",
+      "error_rate": "50.86%",
+      "landlord_win_rate": "90.00%",
+      "farmer_win_rate": "75.00%"
+    },
+    "玩家二": {
+      "agent_name": "玩家二",
+      "agent_type": "normal",
+      "games_played": 30,
+      "games_won": 12,
+      "win_rate": "40.00%",
+      "avg_turn_count": "48.7",
+      "error_rate": "50.86%",
+      "landlord_win_rate": "30.00%",
+      "farmer_win_rate": "45.00%"
+    },
+    "玩家三": {
+      "agent_name": "玩家三",
+      "agent_type": "normal",
+      "games_played": 30,
+      "games_won": 10,
+      "win_rate": "33.33%",
+      "avg_turn_count": "48.7",
+      "error_rate": "50.86%",
+      "landlord_win_rate": "20.00%",
+      "farmer_win_rate": "40.00%"
+    }
+  },
+  "summary": "============================================================\n实验: Experiment_A_CoTAgent_vs_Normal\n总游戏数: 30\n============================================================\n\n各代理表现:\n------------------------------------------------------------\n\n【玩家一】(advanced)\n  胜率: 80.00% (24/30)\n  平均回合: 48.7\n  错误率: 50.86%\n  地主胜率: 9/10\n  农民胜率: 15/20\n\n【玩家二】(normal)\n  胜率: 40.00% (12/30)\n  平均回合: 48.7\n  错误率: 50.86%\n  地主胜率: 3/10\n  农民胜率: 9/20\n\n【玩家三】(normal)\n  胜率: 33.33% (10/30)\n  平均回合: 48.7\n  错误率: 50.86%\n  地主胜率: 2/10\n  农民胜率: 8/20\n\n============================================================\n整体统计:\n  平均回合数: 48.7\n  总错误数: 743\n  每回合错误率: 50.856%\n\n角色胜率:\n  地主: 14/30 (46.7%)\n  农民: 16/30 (53.3%)\n============================================================"
+}

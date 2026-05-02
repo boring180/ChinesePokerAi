@@ -46,7 +46,7 @@ def _get_client():
     return _client
 
 
-def get_llm_reaction(history: List[Dict], prompt: str, model: str = "qwen3.6-plus", 
+def get_llm_reaction(history: List[Dict], prompt: str, model: str = "qwen3.5-flash", 
                      temperature: float = 0.7, max_retries: int = 3) -> str:
     """
     Get LLM response for game interaction.
@@ -79,6 +79,7 @@ def get_llm_reaction(history: List[Dict], prompt: str, model: str = "qwen3.6-plu
                 messages=messages,
                 extra_body={"enable_thinking": False},
                 temperature=temperature,
+                timeout=30,  # 30 second timeout to prevent hanging
             )
             return completion.choices[0].message.content
         except Exception as e:

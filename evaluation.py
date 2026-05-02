@@ -59,40 +59,40 @@ class ExperimentResult:
     def add_result(self, result: GameResult, agent_configs: List[Tuple[str, str, str]]):
         """
         Add a game result with agent configurations.
-        
+
         Args:
             result: GameResult
             agent_configs: List of (name, type, role) for each agent
         """
         self.results.append(result)
-        
+
         # Update stats for each agent
         for idx, (name, agent_type, role) in enumerate(agent_configs):
             if name not in self.agent_stats:
                 self.agent_stats[name] = AgentStats(name, agent_type)
                 self.agent_type_map[name] = agent_type
-            
+
             stats = self.agent_stats[name]
             stats.games_played += 1
-            
+
             # Track role
             is_landlord = (role == "地主")
             if is_landlord:
                 stats.games_as_landlord += 1
             else:
                 stats.games_as_farmer += 1
-            
-            # Track win
-            if result.winner_idx == idx:
+
+            # Track win - check if this agent is in the winner list
+            if idx in result.winner_indices:
                 stats.games_won += 1
                 if is_landlord:
                     stats.wins_as_landlord += 1
                 else:
                     stats.wins_as_farmer += 1
-            
+
             stats.total_turns += result.turn_count
             stats.error_count += result.error_count
-        
+
         # Recalculate averages
         for stats in self.agent_stats.values():
             stats.win_rate = stats.games_won / max(1, stats.games_played)
@@ -213,7 +213,17 @@ class Evaluator:
         # Run games with landlord rotation
         for i in range(num_games):
             # Create fresh agents for each game
-            agent1 = advanced_agent.__class__(advanced_agent.name, advanced_agent.config)
+            # Handle GuideAgent specially (it needs guide_content as second arg)
+            if hasattr(advanced_agent, 'guide_content'):
+                # It's a GuideAgent
+                agent1 = advanced_agent.__class__(
+                    advanced_agent.name, 
+                    guide_content=advanced_agent.guide_content,
+                    config=advanced_agent.config
+                )
+            else:
+                # Other agents: (name, config) signature
+                agent1 = advanced_agent.__class__(advanced_agent.name, advanced_agent.config)
             agent2 = normal_agent_factory()
             agent3 = normal_agent_factory()
             
@@ -234,6 +244,14 @@ class Evaluator:
             )
             game_result = runner.run_game(random_landlord=False, landlord_idx=landlord_idx)
             
+            # Determine winner's agent type
+            agents_list = [agent1, agent2, agent3]
+            winner_agent = agents_list[game_result.winner_idx]
+            winner_type = winner_agent.__class__.__name__.replace('Agent', '').lower()
+            
+            # Print game completion info
+            print(f"  Game {i+1}/{num_games} completed: {game_result.winner_name} ({winner_type}/{game_result.winner_role}) won in {game_result.turn_count} turns, {game_result.error_count} errors")
+            
             # Record result
             agent_configs = [
                 (agent1.name, "advanced", "地主" if landlord_idx == 0 else "农民"),
@@ -243,7 +261,7 @@ class Evaluator:
             result.add_result(game_result, agent_configs)
             
             if (i + 1) % 10 == 0:
-                print(f"  Completed {i+1}/{num_games} games...")
+                print(f"  Progress: {i+1}/{num_games} games completed")
         
         # Save results
         self.experiments.append(result)
@@ -295,6 +313,13 @@ class Evaluator:
             )
             game_result = runner.run_game(random_landlord=True)
             
+            # Determine winner's agent type
+            winner_agent_advanced = agents[game_result.winner_idx]
+            winner_type_advanced = winner_agent_advanced.__class__.__name__.replace('Agent', '').lower()
+            
+            # Print game completion info
+            print(f"  Advanced Group - Game {i+1}/{num_games}: {game_result.winner_name} ({winner_type_advanced}/{game_result.winner_role}) won in {game_result.turn_count} turns, {game_result.error_count} errors")
+            
             agent_configs = [
                 (agents[0].name, "advanced", "unknown"),  # Will be determined by actual role
                 (agents[1].name, "advanced", "unknown"),
@@ -303,7 +328,7 @@ class Evaluator:
             result_advanced.add_result(game_result, agent_configs)
             
             if (i + 1) % 10 == 0:
-                print(f"  Advanced group: {i+1}/{num_games}...")
+                print(f"  Advanced group progress: {i+1}/{num_games}")
         
         # Run normal group
         exp_name_normal = "Experiment_B_3_Normal"
@@ -327,6 +352,13 @@ class Evaluator:
             )
             game_result = runner.run_game(random_landlord=True)
             
+            # Determine winner's agent type (always "normal" for this group)
+            winner_agent_normal = agents[game_result.winner_idx]
+            winner_type_normal = winner_agent_normal.__class__.__name__.replace('Agent', '').lower()
+            
+            # Print game completion info
+            print(f"  Normal Group - Game {i+1}/{num_games}: {game_result.winner_name} ({winner_type_normal}/{game_result.winner_role}) won in {game_result.turn_count} turns, {game_result.error_count} errors")
+            
             agent_configs = [
                 (agents[0].name, "normal", "unknown"),
                 (agents[1].name, "normal", "unknown"),
@@ -335,7 +367,7 @@ class Evaluator:
             result_normal.add_result(game_result, agent_configs)
             
             if (i + 1) % 10 == 0:
-                print(f"  Normal group: {i+1}/{num_games}...")
+                print(f"  Normal group progress: {i+1}/{num_games}")
         
         # Save results
         self.experiments.extend([result_advanced, result_normal])

@@ -6,8 +6,8 @@ Tests whether advanced features improve win rate.
 import sys
 sys.path.insert(0, '/Users/xuborong/Documents/GitHub/ChinesePokerAi')
 
-from ai_agent import CoTAgent, ToolAgent, FullAgent, NormalAgent, AgentConfig, load_strategy_guide
-from evaluation import Evaluator
+from ai_agent import GuideAgent, CoTAgent, ToolAgent, FullAgent, NormalAgent, AgentConfig, load_strategy_guide
+from evaluation import Evaluator, AgentStats
 
 
 def run_experiment_a(agent_type: str = "cot", num_games: int = 30):

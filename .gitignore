@@ -3,3 +3,4 @@ __pycache__/**
 *.pyc
 *.txt
 API_key.json
+**.DS_Store

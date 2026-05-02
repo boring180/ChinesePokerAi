@@ -6,7 +6,7 @@ Compares turn count (efficiency) between groups.
 import sys
 sys.path.insert(0, '/Users/xuborong/Documents/GitHub/ChinesePokerAi')
 
-from ai_agent import CoTAgent, ToolAgent, FullAgent, NormalAgent, AgentConfig, load_strategy_guide
+from ai_agent import GuideAgent, CoTAgent, ToolAgent, FullAgent, NormalAgent, AgentConfig, load_strategy_guide
 from evaluation import Evaluator
 
 

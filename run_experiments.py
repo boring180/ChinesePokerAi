@@ -198,14 +198,14 @@ def main():
     # ============================================================
     
     # What to run? (set only ONE to True)
-    RUN_TEST = True              # Quick single game test
+    RUN_TEST = False              # Quick single game test
     RUN_ALL_EXPERIMENTS = False  # Full suite: Experiment A + B with all agent types
     RUN_EXPERIMENT_A_ALL = False # Experiment A with all agent types
     RUN_EXPERIMENT_B_ALL = False # Experiment B with all agent types
     
     # Single experiment settings (used if RUN_ALL_* is False but RUN_TEST is False)
-    RUN_EXPERIMENT_A = False     # Run only Experiment A
-    AGENT_TYPE_A = "cot"         # Agent for Exp A: "guide", "cot", "tool", "full"
+    RUN_EXPERIMENT_A = True     # Run only Experiment A
+    AGENT_TYPE_A = "tool"         # Agent for Exp A: "guide", "cot", "tool", "full"
     NUM_GAMES_A = 30             # Number of games for Exp A
     
     RUN_EXPERIMENT_B = False     # Run only Experiment B

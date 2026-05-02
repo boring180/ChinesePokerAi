@@ -1,0 +1,54 @@
+{
+  "game_id": "20260502_185121_406",
+  "winners": {
+    "primary": {
+      "name": "玩家二",
+      "role": "农民",
+      "index": 1
+    },
+    "all": [
+      {
+        "name": "玩家二",
+        "index": 1
+      },
+      {
+        "name": "玩家三",
+        "index": 2
+      }
+    ]
+  },
+  "statistics": {
+    "turn_count": 53,
+    "error_count": 86,
+    "error_rate": 1.6226415094339623
+  },
+  "tool_statistics": {
+    "total_calls": 0,
+    "calls_by_tool": {}
+  },
+  "final_state": {
+    "玩家一": 10,
+    "玩家二": 0,
+    "玩家三": 9
+  },
+  "players": [
+    {
+      "name": "玩家一",
+      "role": "landlord",
+      "agent_type": "GuideAgent",
+      "final_cards": 10
+    },
+    {
+      "name": "玩家二",
+      "role": "farmer",
+      "agent_type": "NormalAgent",
+      "final_cards": 0
+    },
+    {
+      "name": "玩家三",
+      "role": "farmer",
+      "agent_type": "NormalAgent",
+      "final_cards": 9
+    }
+  ]
+}
