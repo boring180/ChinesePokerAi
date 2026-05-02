@@ -11,7 +11,7 @@ from datetime import datetime
 
 from game_control import Player, Card, Series, CardType, validate_series, deal_cards, assign_landlord, check_game_end
 from game_state import GameState, CardTracker
-from ai_agent import BaseAgent, NormalAgent, CoTAgent, ToolAgent, FullAgent, GuideAgent, ToolCall
+from ai_agent import BaseAgent, NormalAgent, CoTAgent, ToolAgent, GuideAgent, ToolCall
 from tools import (
     CardHistoryTool, ValidMovesTool, TreeSearchTool
 )
@@ -425,7 +425,7 @@ class GameRunner:
         Returns:
             (success, result, error_count) where result is "PASS" or List[Card]
         """
-        is_tool_agent = isinstance(agent, (ToolAgent, FullAgent))
+        is_tool_agent = isinstance(agent, ToolAgent)
         
         # Build appropriate prompt
         if is_tool_agent:

@@ -22,8 +22,6 @@ Tool-Augmented: External tool calling with parallel tool support - Query valid m
 
 In-Context Learning: RAG-style retrieval - Dynamic strategy guide injection based on game state
 
-Full Agent: Ensemble methods - CoT + Tools + In-Context Learning combined
-
 Results
 
 Experiment A: 1 Advanced vs 2 Baseline Agents (30 games each)
@@ -88,7 +86,7 @@ Implications: Structured tool APIs can substitute for explicit inter-agent commu
 
 Future Work
 
-- Complete CoT Agent and Full Agent evaluations with parallel tool support
+- Complete CoT Agent evaluation with parallel tool support
 - Investigate optimal tool combinations (which tools work best together)
 - Scale to larger samples (100+ games) for statistical validation
 - Experiment B: Efficiency analysis comparing turn counts between agent groups
