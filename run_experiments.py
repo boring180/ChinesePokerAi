@@ -55,7 +55,7 @@ def run_experiment_a_all(num_games: int = 30):
     print_header("EXPERIMENT A: Win Rate Comparison (1 Advanced vs 2 Normal)")
     
     results = {}
-    for agent_type in ["guide", "cot", "tool", "full"]:
+    for agent_type in ["guide", "cot", "tool"]:
         print(f"\n{'='*70}")
         print(f" Testing {agent_type.upper()} Agent")
         print(f"{'='*70}")
@@ -90,7 +90,7 @@ def run_experiment_b_all(num_games: int = 30):
     print_header("EXPERIMENT B: Turn Count Comparison (3 Advanced vs 3 Normal)")
     
     results = {}
-    for agent_type in ["guide", "cot", "tool", "full"]:
+    for agent_type in ["guide", "cot", "tool"]:
         print(f"\n{'='*70}")
         print(f" Testing {agent_type.upper()} Agents")
         print(f"{'='*70}")
@@ -126,6 +126,56 @@ def run_experiment_b_single(agent_type: str = "cot", num_games: int = 30):
     print_header(f"EXPERIMENT B: 3 {agent_type.upper()} Agents vs 3 Normal Agents")
     adv_result, norm_result = run_experiment_b(agent_type, num_games)
     return {agent_type: (adv_result, norm_result)}
+
+
+def run_baseline_experiment(num_games: int = 30):
+    """
+    Baseline Experiment: 3 Normal Agents vs 3 Normal Agents
+    Establishes the true baseline win rate when all agents are normal.
+    This helps verify that the baseline 33.3% win rate assumption is correct.
+    """
+    from evaluation import Evaluator
+    from ai_agent import NormalAgent, AgentConfig
+
+    print_header("BASELINE EXPERIMENT: 3 Normal Agents vs 3 Normal Agents")
+    print("\nPurpose: Establish true baseline win rate for normal agents")
+    print("Setup: All 3 players are Normal agents (no advanced features)")
+    print(f"Tracking win rate of '玩家一' across {num_games} games...")
+
+    # Create evaluator
+    evaluator = Evaluator(output_dir="results/baseline")
+
+    # Normal agent factory
+    def normal_agent_factory(name):
+        return NormalAgent(name, AgentConfig())
+
+    # Run baseline experiment
+    result = evaluator.evaluate_baseline(
+        normal_agent_factory=normal_agent_factory,
+        num_games=num_games
+    )
+
+    # Get stats for the tracked agent (玩家一)
+    stats = result.agent_stats.get("玩家一")
+
+    if stats:
+        print("\n" + "=" * 70)
+        print("BASELINE EXPERIMENT SUMMARY")
+        print("=" * 70)
+        print(f"\nTracked Agent (玩家一):")
+        print(f"  Games played: {stats.games_played}")
+        print(f"  Games won: {stats.games_won}")
+        print(f"  Win rate: {stats.win_rate:.1%}")
+        print(f"  Expected (random): 33.3%")
+        print(f"  Deviation: {stats.win_rate*100 - 33.3:+.1f}%")
+        print(f"\nOther stats:")
+        print(f"  As landlord: {stats.wins_as_landlord}/{stats.games_as_landlord} wins")
+        print(f"  As farmer: {stats.wins_as_farmer}/{stats.games_as_farmer} wins")
+        print(f"  Avg turns: {stats.avg_turn_count:.1f}")
+        print(f"  Error rate: {stats.error_rate:.2%}")
+        print("=" * 70)
+
+    return result
 
 
 def run_all_experiments(num_games_a: int = 30, num_games_b: int = 30):
@@ -202,15 +252,19 @@ def main():
     RUN_ALL_EXPERIMENTS = False  # Full suite: Experiment A + B with all agent types
     RUN_EXPERIMENT_A_ALL = False # Experiment A with all agent types
     RUN_EXPERIMENT_B_ALL = False # Experiment B with all agent types
-    
+    RUN_BASELINE = True         # Baseline: 3 Normal agents vs 3 Normal agents
+
     # Single experiment settings (used if RUN_ALL_* is False but RUN_TEST is False)
-    RUN_EXPERIMENT_A = True     # Run only Experiment A
-    AGENT_TYPE_A = "tool"         # Agent for Exp A: "guide", "cot", "tool", "full"
+    RUN_EXPERIMENT_A = False     # Run only Experiment A
+    AGENT_TYPE_A = "tool"         # Agent for Exp A: "guide", "cot", "tool"
     NUM_GAMES_A = 30             # Number of games for Exp A
-    
+
     RUN_EXPERIMENT_B = False     # Run only Experiment B
-    AGENT_TYPE_B = "cot"         # Agent for Exp B: "guide", "cot", "tool", "full"
+    AGENT_TYPE_B = "cot"         # Agent for Exp B: "guide", "cot", "tool"
     NUM_GAMES_B = 30             # Number of games per group for Exp B
+
+    # Baseline experiment settings
+    NUM_GAMES_BASELINE = 30      # Number of games for baseline experiment
     
     # ============================================================
     # END CONFIG - DON'T EDIT BELOW UNLESS YOU KNOW WHAT YOU'RE DOING
@@ -232,13 +286,16 @@ def main():
     
     elif RUN_EXPERIMENT_B_ALL:
         run_experiment_b_all(NUM_GAMES_B)
-    
+
     elif RUN_EXPERIMENT_A:
         run_experiment_a_single(AGENT_TYPE_A, NUM_GAMES_A)
-    
+
     elif RUN_EXPERIMENT_B:
         run_experiment_b_single(AGENT_TYPE_B, NUM_GAMES_B)
-    
+
+    elif RUN_BASELINE:
+        run_baseline_experiment(NUM_GAMES_BASELINE)
+
     else:
         print("\n⚠️  Nothing configured to run!")
         print("Please set one of the RUN_* variables to True in the main() function.")

@@ -404,7 +404,116 @@ class Evaluator:
         print("=" * 60)
         
         return result_advanced, result_normal
-    
+
+    def evaluate_baseline(self, normal_agent_factory, num_games: int = 30) -> ExperimentResult:
+        """
+        Baseline Experiment: 3 Normal Agents vs 3 Normal Agents
+        Establishes true baseline win rate when all agents are normal.
+
+        Setup:
+        - All 3 players are Normal agents
+        - Tracks win rate for a specific agent (玩家一) to establish baseline
+
+        Args:
+            normal_agent_factory: Factory function that returns normal agents
+            num_games: Number of games to run
+
+        Returns:
+            ExperimentResult with stats for all 3 normal agents
+        """
+        from game_runner import GameRunner
+
+        exp_name = "Experiment_Baseline_3_Normal_Agents"
+        result = ExperimentResult(exp_name, num_games)
+
+        print(f"\nRunning {exp_name}...")
+        print(f"Configuration: 3 Normal agents playing against each other")
+        print(f"Running {num_games} games...")
+        print(f"This establishes the baseline win rate for normal agents.")
+        if self.log_games:
+            print(f"Game logs will be saved to: {self.logs_dir}/{exp_name}/")
+
+        # Run games with landlord rotation
+        for i in range(num_games):
+            # Create fresh normal agents for each game
+            agent1 = normal_agent_factory("玩家一")
+            agent2 = normal_agent_factory("玩家二")
+            agent3 = normal_agent_factory("玩家三")
+
+            agents = [agent1, agent2, agent3]
+
+            # Rotate landlord
+            landlord_idx = i % 3
+
+            # Enable logging for first 5 games
+            game_logging = self.log_games and i < 5
+            runner = GameRunner(
+                agents,
+                verbose=False,
+                enable_logging=game_logging,
+                log_folder=self.logs_dir if game_logging else "logs",
+                experiment_name=exp_name if game_logging else None
+            )
+            game_result = runner.run_game(random_landlord=False, landlord_idx=landlord_idx)
+
+            # Determine winner
+            winner_agent = agents[game_result.winner_idx]
+            winner_name = winner_agent.name
+
+            # Print game completion info
+            print(f"  Game {i+1}/{num_games} completed: {winner_name} ({game_result.winner_role}) won in {game_result.turn_count} turns, {game_result.error_count} errors")
+
+            # Record result - all agents are "normal" type
+            agent_configs = [
+                (agent1.name, "normal", "地主" if landlord_idx == 0 else "农民"),
+                (agent2.name, "normal", "地主" if landlord_idx == 1 else "农民"),
+                (agent3.name, "normal", "地主" if landlord_idx == 2 else "农民"),
+            ]
+            result.add_result(game_result, agent_configs)
+
+            if (i + 1) % 10 == 0:
+                print(f"  Progress: {i+1}/{num_games} games completed")
+
+        # Save results
+        self.experiments.append(result)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        result.save(os.path.join(self.output_dir, f"{exp_name}_{timestamp}.json"))
+
+        # Print summary focusing on 玩家一 as the tracked baseline
+        print("\n" + "=" * 60)
+        print("BASELINE EXPERIMENT RESULTS")
+        print("=" * 60)
+
+        stats_player1 = result.agent_stats.get("玩家一")
+        stats_player2 = result.agent_stats.get("玩家二")
+        stats_player3 = result.agent_stats.get("玩家三")
+
+        if stats_player1:
+            print(f"\n【玩家一】Baseline Normal Agent:")
+            print(f"  Overall win rate: {stats_player1.win_rate:.1%} ({stats_player1.games_won}/{stats_player1.games_played})")
+            print(f"  As landlord: {stats_player1.wins_as_landlord}/{stats_player1.games_as_landlord} ({stats_player1.wins_as_landlord/max(1,stats_player1.games_as_landlord):.1%})")
+            print(f"  As farmer: {stats_player1.wins_as_farmer}/{stats_player1.games_as_farmer} ({stats_player1.wins_as_farmer/max(1,stats_player1.games_as_farmer):.1%})")
+            print(f"  Average turns: {stats_player1.avg_turn_count:.1f}")
+            print(f"  Error rate: {stats_player1.error_rate:.2%}")
+
+        if stats_player2 and stats_player3:
+            avg_wr = (stats_player2.win_rate + stats_player3.win_rate) / 2
+            print(f"\nOther Normal Agents (Player 2 & 3):")
+            print(f"  Average win rate: {avg_wr:.1%}")
+
+        # Calculate role-based win rates
+        landlord_wins = sum(1 for r in result.results if r.winner_role == "地主")
+        farmer_wins = len(result.results) - landlord_wins
+        print(f"\nRole-based Statistics:")
+        print(f"  Landlord win rate: {landlord_wins}/{len(result.results)} ({landlord_wins/max(1,len(result.results)):.1%})")
+        print(f"  Farmer win rate: {farmer_wins}/{len(result.results)} ({farmer_wins/max(1,len(result.results)):.1%})")
+
+        print("\n" + "=" * 60)
+        print(f"BASELINE ESTABLISHED: Normal agent win rate = {stats_player1.win_rate:.1%}" if stats_player1 else "")
+        print("=" * 60)
+
+        return result
+
     def compare_all_experiments(self):
         """Generate overall comparison report"""
         if not self.experiments:

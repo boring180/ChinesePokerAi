@@ -22,15 +22,9 @@ def _load_api_key():
     """Load API key from file"""
     global _API_KEY
     if _API_KEY is None:
-        try:
-            with open('API_key.json', 'r') as f:
-                data = json.load(f)
-                _API_KEY = data.get('API_KEY')
-        except Exception as e:
-            # Try environment variable as fallback
-            _API_KEY = os.environ.get('DASHSCOPE_API_KEY')
-            if _API_KEY is None:
-                raise ValueError(f"Cannot load API key: {e}. Please set API_KEY in API_key.json or DASHSCOPE_API_KEY environment variable.")
+        _API_KEY = os.environ.get('QWEN_HK')
+        if _API_KEY is None:
+            raise ValueError(f"Cannot load API key: {e}. Please set API_KEY in API_key.json or DASHSCOPE_API_KEY environment variable.")
     return _API_KEY
 
 
@@ -41,7 +35,8 @@ def _get_client():
         api_key = _load_api_key()
         _client = OpenAI(
             api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            # base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            base_url="https://cn-hongkong.dashscope.aliyuncs.com/compatible-mode/v1"
         )
     return _client
 

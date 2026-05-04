@@ -6,7 +6,7 @@ Compares turn count (efficiency) between groups.
 import sys
 sys.path.insert(0, '/Users/xuborong/Documents/GitHub/ChinesePokerAi')
 
-from ai_agent import GuideAgent, CoTAgent, ToolAgent, FullAgent, NormalAgent, AgentConfig, load_strategy_guide
+from ai_agent import GuideAgent, CoTAgent, ToolAgent, NormalAgent, AgentConfig, load_strategy_guide
 from evaluation import Evaluator
 
 
@@ -15,7 +15,7 @@ def run_experiment_b(advanced_type: str = "cot", num_games: int = 30):
     Run Experiment B comparing turn counts.
     
     Args:
-        advanced_type: "guide", "cot", "tool", or "full"
+        advanced_type: "guide", "cot", or "tool"
         num_games: Number of games per group (default 30)
     """
     print("=" * 60)
@@ -42,10 +42,8 @@ def run_experiment_b(advanced_type: str = "cot", num_games: int = 30):
             return CoTAgent(name, config)
         elif advanced_type == "tool":
             return ToolAgent(name, config)
-        elif advanced_type == "full":
-            return FullAgent(name, config, guide_content=guide)
         else:
-            raise ValueError(f"Unknown agent type: {advanced_type}")
+            raise ValueError(f"Unknown agent type: {advanced_type}. Choose from: guide, cot, tool")
     
     # Normal agent factory
     def normal_factory(name):
@@ -102,7 +100,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Run Experiment B")
     parser.add_argument("--advanced-type", type=str, default="cot",
-                       choices=["guide", "cot", "tool", "full"],
+                       choices=["guide", "cot", "tool"],
                        help="Type of advanced agent")
     parser.add_argument("--num-games", type=int, default=30,
                        help="Number of games per group")
@@ -113,7 +111,7 @@ if __name__ == "__main__":
     
     if args.all:
         results = {}
-        for agent_type in ["guide", "cot", "tool", "full"]:
+        for agent_type in ["guide", "cot", "tool"]:
             print(f"\n\n{'='*60}")
             print(f"Running with {agent_type.upper()} agents...")
             print(f"{'='*60}")

@@ -1,0 +1,40 @@
+{
+  "experiment_name": "Experiment_Baseline_3_Normal_Agents",
+  "num_games": 30,
+  "agent_stats": {
+    "玩家一": {
+      "agent_name": "玩家一",
+      "agent_type": "normal",
+      "games_played": 30,
+      "games_won": 17,
+      "win_rate": "56.67%",
+      "avg_turn_count": "56.9",
+      "error_rate": "72.80%",
+      "landlord_win_rate": "40.00%",
+      "farmer_win_rate": "65.00%"
+    },
+    "玩家二": {
+      "agent_name": "玩家二",
+      "agent_type": "normal",
+      "games_played": 30,
+      "games_won": 21,
+      "win_rate": "70.00%",
+      "avg_turn_count": "56.9",
+      "error_rate": "72.80%",
+      "landlord_win_rate": "60.00%",
+      "farmer_win_rate": "75.00%"
+    },
+    "玩家三": {
+      "agent_name": "玩家三",
+      "agent_type": "normal",
+      "games_played": 30,
+      "games_won": 11,
+      "win_rate": "36.67%",
+      "avg_turn_count": "56.9",
+      "error_rate": "72.80%",
+      "landlord_win_rate": "10.00%",
+      "farmer_win_rate": "50.00%"
+    }
+  },
+  "summary": "============================================================\n实验: Experiment_Baseline_3_Normal_Agents\n总游戏数: 30\n============================================================\n\n各代理表现:\n------------------------------------------------------------\n\n【玩家一】(normal)\n  胜率: 56.67% (17/30)\n  平均回合: 56.9\n  错误率: 72.80%\n  地主胜率: 4/10\n  农民胜率: 13/20\n\n【玩家二】(normal)\n  胜率: 70.00% (21/30)\n  平均回合: 56.9\n  错误率: 72.80%\n  地主胜率: 6/10\n  农民胜率: 15/20\n\n【玩家三】(normal)\n  胜率: 36.67% (11/30)\n  平均回合: 56.9\n  错误率: 72.80%\n  地主胜率: 1/10\n  农民胜率: 10/20\n\n============================================================\n整体统计:\n  平均回合数: 56.9\n  总错误数: 1242\n  每回合错误率: 72.802%\n\n角色胜率:\n  地主: 11/30 (36.7%)\n  农民: 19/30 (63.3%)\n============================================================"
+}

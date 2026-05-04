@@ -6,7 +6,7 @@ Tests whether advanced features improve win rate.
 import sys
 sys.path.insert(0, '/Users/xuborong/Documents/GitHub/ChinesePokerAi')
 
-from ai_agent import GuideAgent, CoTAgent, ToolAgent, FullAgent, NormalAgent, AgentConfig, load_strategy_guide
+from ai_agent import GuideAgent, CoTAgent, ToolAgent, NormalAgent, AgentConfig, load_strategy_guide
 from evaluation import Evaluator, AgentStats
 
 
@@ -41,11 +41,8 @@ def run_experiment_a(agent_type: str = "cot", num_games: int = 30):
         advanced_agent = CoTAgent("高级玩家", config)
     elif agent_type == "tool":
         advanced_agent = ToolAgent("高级玩家", config)
-    elif agent_type == "full":
-        guide = load_strategy_guide("guides/advanced_guide.md")
-        advanced_agent = FullAgent("高级玩家", config, guide_content=guide)
     else:
-        raise ValueError(f"Unknown agent type: {agent_type}")
+        raise ValueError(f"Unknown agent type: {agent_type}. Choose from: guide, cot, tool")
     
     # Normal agent factory
     def normal_agent_factory():
@@ -87,7 +84,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Run Experiment A")
     parser.add_argument("--agent-type", type=str, default="cot",
-                       choices=["guide", "cot", "tool", "full"],
+                       choices=["guide", "cot", "tool"],
                        help="Type of advanced agent")
     parser.add_argument("--num-games", type=int, default=30,
                        help="Number of games to run")
@@ -100,7 +97,7 @@ if __name__ == "__main__":
     
     if args.all:
         results = {}
-        for agent_type in ["guide", "cot", "tool", "full"]:
+        for agent_type in ["guide", "cot", "tool"]:
             print(f"\n\n{'='*60}")
             print(f"Running with {agent_type.upper()} agent...")
             print(f"{'='*60}")
