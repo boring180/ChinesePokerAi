@@ -1,0 +1,24 @@
+graph TD
+    P[Prompt: Game State] --> L1[<img src='file:///Users/xuborong/Documents/GitHub/ChinesePokerAi/diagrams/agents/llm.png' width='60' /> LLM]
+
+    L1 --> TC{Need Tools?}
+    TC -->|Yes| T1[Get Recommendations]
+    TC -->|Yes| T2[Find Best Play]
+    TC -->|Yes| T3[Valid Moves]
+
+    T1 --> R[Tool Results]
+    T2 --> R
+    T3 --> R
+
+    R --> L2[<img src='file:///Users/xuborong/Documents/GitHub/ChinesePokerAi/diagrams/agents/llm.png' width='60' /> LLM]
+    TC -->|No| L2
+
+    L2 --> OUT[Response: Cards/PASS]
+
+    style L1 fill:#e1f5ff,stroke:#333,stroke-width:2px
+    style L2 fill:#e1f5ff,stroke:#333,stroke-width:2px
+    style TC fill:#fff4e1,stroke:#333
+    style T1 fill:#e8f5e9,stroke:#333
+    style T2 fill:#e8f5e9,stroke:#333
+    style T3 fill:#e8f5e9,stroke:#333
+    style R fill:#fce4ec,stroke:#333

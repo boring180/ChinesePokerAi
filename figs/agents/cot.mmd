@@ -1,0 +1,9 @@
+graph TD
+    P[Prompt: Game State] --> L[<img src='file:///Users/xuborong/Documents/GitHub/ChinesePokerAi/diagrams/agents/llm.png' width='60' /> LLM]
+    L --> C[Chain-of-Thought:<br/>1. Situation Analysis<br/>2. Option Evaluation<br/>3. Risk Assessment]
+    C --> D[Final Decision]
+    D --> R[Response: Cards/PASS]
+
+    style L fill:#e1f5ff,stroke:#333,stroke-width:2px
+    style C fill:#fff4e1,stroke:#333
+    style D fill:#e8f5e9,stroke:#333

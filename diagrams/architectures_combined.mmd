@@ -1,0 +1,39 @@
+graph LR
+    subgraph CoT["Chain-of-Thought (CoT)"]
+        direction TB
+        C1[Prompt: Game State] --> C2[LLM Model]
+        C2 --> C3[Step-by-Step Reasoning]
+        C3 --> C3a[1. Situation Analysis]
+        C3 --> C3b[2. Option Evaluation]
+        C3 --> C3c[3. Risk Assessment]
+        C3a --> C4[Final Decision]
+        C3b --> C4
+        C3c --> C4
+        C4 --> C5[Response: Cards/PASS]
+    end
+
+    subgraph ICL["In-Context Learning"]
+        direction TB
+        I1[Strategy Guide] --> I2[Concatenate Guide + Prompt]
+        I3[Prompt: Game State] --> I2
+        I2 --> I4[LLM Model]
+        I4 --> I5[Response: Cards/PASS]
+    end
+
+    subgraph Tool["Tool-Augmented (Parallel)"]
+        direction TB
+        T1[Prompt: Game State] --> T2[LLM Model]
+        T2 --> T3{Need Tools?}
+        T3 -->|Yes| T4[Get Recommendations]
+        T3 -->|Yes| T5[Find Best Play]
+        T3 -->|Yes| T6[Valid Moves]
+        T3 -->|No| T7[LLM Final Decision]
+        T4 --> T7
+        T5 --> T7
+        T6 --> T7
+        T7 --> T8[Response: Cards/PASS]
+    end
+
+    style CoT fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    style ICL fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
+    style Tool fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px

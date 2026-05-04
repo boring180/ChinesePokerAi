@@ -1,0 +1,18 @@
+graph LR
+    subgraph Title["Agent Win Rates (Experiment A: 30 games)"]
+        direction TB
+
+        T["Tool-Augmented"] --> T90["██████████ 90.0%"]
+        C["Chain-of-Thought"] --> C80["████████░ 80.0%"]
+        I["In-Context Learning"] --> I57["█████░░░░░ 56.7%"]
+        B["Baseline"] --> B33["███░░░░░░░ 33.3%"]
+    end
+
+    style T fill:#4caf50,color:#fff
+    style T90 fill:#4caf50,color:#fff
+    style C fill:#8bc34a
+    style C80 fill:#8bc34a
+    style I fill:#ff9800
+    style I57 fill:#ff9800
+    style B fill:#f44336,color:#fff
+    style B33 fill:#f44336,color:#fff

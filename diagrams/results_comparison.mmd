@@ -1,0 +1,12 @@
+graph LR
+    subgraph WinRates["Win Rate Comparison (30 games each)"]
+        direction TB
+        T["Tool-Augmented<br/>90.0%<br/>27/30"] --> C["CoT<br/>80.0%<br/>24/30"]
+        C --> I["In-Context Learning<br/>56.7%<br/>17/30"]
+        I --> B["Baseline<br/>33.3%<br/>10/30"]
+    end
+
+    style T fill:#4caf50,stroke:#333,stroke-width:3px,color:#fff
+    style C fill:#8bc34a,stroke:#333,stroke-width:2px
+    style I fill:#ff9800,stroke:#333
+    style B fill:#f44336,stroke:#333,color:#fff

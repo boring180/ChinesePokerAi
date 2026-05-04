@@ -1,0 +1,1 @@
+mmdc -i cot.mmd -o cot.png --puppeteerConfigFile puppeteer.json

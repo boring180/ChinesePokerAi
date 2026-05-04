@@ -1,0 +1,9 @@
+graph TD
+    G[Strategy Guide] --> C[Concatenate Guide + Prompt]
+    P[Prompt: Game State] --> C
+    C --> L[<img src='file:///Users/xuborong/Documents/GitHub/ChinesePokerAi/diagrams/agents/llm.png' width='60' /> LLM]
+    L --> R[Response: Cards/PASS]
+
+    style G fill:#fff4e1,stroke:#333
+    style L fill:#e1f5ff,stroke:#333,stroke-width:2px
+    style C fill:#f3e5f5,stroke:#333
