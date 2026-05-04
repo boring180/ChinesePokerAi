@@ -27,7 +27,7 @@ try:
     agent_colors = [colors[a] for a in agents]
 
     # Create figure with 3 subplots (Win Rate, Error Rate, Average Turns)
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 8))
     
     # Common settings
     for ax in axes:
@@ -38,42 +38,45 @@ try:
     # Subplot 1: Win Rate
     ax1 = axes[0]
     bars1 = ax1.bar(range(len(agents)), win_rates, color=agent_colors, edgecolor='black', linewidth=1.5)
-    ax1.set_ylabel('Win Rate (%)', fontweight='bold')
-    ax1.set_title('Win Rate\n(Higher is Better)', fontweight='bold', pad=10)
+    ax1.set_ylabel('Win Rate (%)', fontweight='bold', fontsize=12)
+    ax1.set_title('Win Rate\n(Higher is Better)', fontweight='bold', pad=10, fontsize=15)
     ax1.set_ylim(0, 100)
-    
+    ax1.tick_params(axis='y', labelsize=11)
+
     for i, (bar, val) in enumerate(zip(bars1, win_rates)):
-        ax1.text(i, val + 2, f'{val:.1f}%', ha='center', va='bottom', fontweight='bold', fontsize=10)
-    
+        ax1.text(i, val + 2, f'{val:.1f}%', ha='center', va='bottom', fontweight='bold', fontsize=12)
+
     # Subplot 2: Error Rate
     ax2 = axes[1]
     bars2 = ax2.bar(range(len(agents)), error_rates, color=agent_colors, edgecolor='black', linewidth=1.5)
-    ax2.set_ylabel('Error Rate (%)', fontweight='bold')
-    ax2.set_title('Error Rate\n(Lower is Better)', fontweight='bold', pad=10)
+    ax2.set_ylabel('Error Rate (%)', fontweight='bold', fontsize=12)
+    ax2.set_title('Error Rate\n(Lower is Better)', fontweight='bold', pad=10, fontsize=15)
     ax2.set_ylim(0, 220)
-    
+    ax2.tick_params(axis='y', labelsize=11)
+
     for i, (bar, val) in enumerate(zip(bars2, error_rates)):
-        ax2.text(i, val + 5, f'{val:.1f}%', ha='center', va='bottom', fontweight='bold', fontsize=9)
-    
+        ax2.text(i, val + 5, f'{val:.1f}%', ha='center', va='bottom', fontweight='bold', fontsize=12)
+
     # Subplot 3: Average Turns
     ax3 = axes[2]
     bars3 = ax3.bar(range(len(agents)), avg_turns, color=agent_colors, edgecolor='black', linewidth=1.5)
-    ax3.set_ylabel('Average Turns', fontweight='bold')
-    ax3.set_title('Average Turns\n(Lower is Better)', fontweight='bold', pad=10)
+    ax3.set_ylabel('Average Turns', fontweight='bold', fontsize=12)
+    ax3.set_title('Average Turns\n(Lower is Better)', fontweight='bold', pad=10, fontsize=15)
     ax3.set_ylim(40, 70)
-    
+    ax3.tick_params(axis='y', labelsize=11)
+
     for i, (bar, val) in enumerate(zip(bars3, avg_turns)):
-        ax3.text(i, val + 1, f'{val:.1f}', ha='center', va='bottom', fontweight='bold', fontsize=10)
+        ax3.text(i, val + 1, f'{val:.1f}', ha='center', va='bottom', fontweight='bold', fontsize=12)
     
     # Add legend
     from matplotlib.patches import Patch
     legend_elements = [Patch(facecolor=colors[a], edgecolor='black', label=a) for a in agents]
-    fig.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 0.02), 
-              ncol=4, frameon=True, fontsize=10)
-    
+    fig.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 0.02),
+              ncol=4, frameon=True, fontsize=12)
+
     # Main title
-    fig.suptitle('Agent Performance Comparison: Win Rate, Error Rate, and Efficiency\n(Experiment A: 30 Games)', 
-                 fontsize=14, fontweight='bold', y=1.02)
+    fig.suptitle('Agent Performance Comparison: Win Rate, Error Rate, and Efficiency\n(Experiment A: 30 Games)',
+                 fontsize=18, fontweight='bold', y=1.02)
     
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.15)

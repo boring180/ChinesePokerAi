@@ -93,9 +93,11 @@ Conclusion
 
 Parallel tool-augmented LLM agents achieve state-of-the-art performance in asymmetric multi-agent card games. The 90% win rate demonstrates that structured tool access enables both superior individual play and implicit multi-agent coordination.
 
-Key Insight: Parallel tool calling enables agents to synthesize information from multiple sources (recommendations, efficiency analysis, valid moves) in a single turn for optimal decision making.
+Key Insight: Parallel tool calling enables agents to synthesize information from multiple sources (recommendations, efficiency analysis, valid moves) in a single turn for optimal decision making. External tools provide reliable information for checking move validity and optimality, while CoT demonstrates that LLM self-reasoning can also produce reasonable decisions.
 
-Implications: Structured tool APIs can substitute for explicit inter-agent communication in cooperative settings. The 100% landlord win rate shows LLM agents can master asymmetric competitive roles when given appropriate reasoning tools.
+Implications: Structured tool APIs can substitute for explicit inter-agent communication in cooperative settings. The 100% landlord win rate shows LLM agents can master asymmetric competitive roles when given appropriate reasoning tools. These findings inform the design of LLM-based distributed systems where agents must coordinate without central control.
+
+Broader Applications: Beyond card games, these results suggest potential for tool-augmented LLM agents in distributed robotics, collaborative logistics, and multi-party negotiation systems where agents must balance individual decision quality with implicit coordination under incomplete information.
 
 Future Work
 
